@@ -1,0 +1,28 @@
+The progam read/write FITS files. The format is supported by IDL/Matlab and 
+the fitsio library is available here: http://heasarc.gsfc.nasa.gov/fitsio
+
+To run the filtering, the command is
+$ISAP/sparse2d/bin/mr_sigma in_map  
+An online is help is obtained just by running mr_sigma without options.
+
+ 
+Example of command:
+
+- Gaussian Noise estimation with default option
+mr_sigma  input.fits  
+
+- Gaussian Noise estimation using the multiresolution support (4 wavelet scales per default)
+mr_sigma -m4  input.fits  
+
+
+- Gaussian Noise estimation using the multiresolution support and 6 wavelet scales
+mr_sigma -m4 -n6 input.fits 
+
+ 
+Gaussian Noise estimation using the multiresolution support is described in
+-  J.-L. Starck and F. Murtagh, "Automatic noise estimation from the multiresolution support", 
+ Publications of the Astronomical Society of the Pacific, 110, 193-199, 1998.
+-  J.L. Starck and F. Murtagh, Astronomical Image and Data Analysis , 
+ Springer, 2006, second edition. (ISBN-10: 3-540-33024-0; 360-pp. monograph).
+ 
+   

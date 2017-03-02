@@ -1,0 +1,36 @@
+                  sparse2d INSTALL PROCEDURE UNDER UNIX/LINUX/MACOS X/CYGWIN/MINGW
+			TODO: this toolbox has not been tested under Windows.
+
+1. PREREQUISITE
+
+  a. Mandatory:
+
+   - C++ compiler.
+   - Recent version of CFITSIO need to be first installed (http://heasarc.gsfc.nasa.gov/fitsio)
+   - Environment variable RCA must be defined: export RCA=/Users/fngole/Sofwares/rca
+   - Add in your path: PATH=$PATH:$RCA/sparse2d/bin
+
+2. BUILDING
+
+  To configure the sparse2d toolbox for your machine type:
+        cd sparse2d
+        ./configure
+    
+    Type "./configure -help" to get a list of all available options.
+
+    To create the toolbox and compile all the C++ files, type:
+
+        make
+
+    You may want to clean the toolbox after the compilation step, type:
+
+    	make clean
+
+3. CLEAN AND REBUILD
+
+  To rebuild the toolbox, just type the following:
+
+        make distclean
+	./configure
+	make
+
