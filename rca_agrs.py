@@ -56,7 +56,7 @@ def get_args():
     ints = ['upsample', 'sparse_strength', 'n_atoms', 'n_altmin',
             'n_iter', 'n_reweight']
     bools = ['use_sparsity', 'use_wavelets', 'use_positivity']
-    defaults = {k: int(v) if k in ints else bool(v) if k in bools else v
+    defaults = {k: int(v) if k in ints else eval(v) if k in bools else v
                 for k, v in defaults.items()}
 
     parser = ap.ArgumentParser(parents=[config_parser],

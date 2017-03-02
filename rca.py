@@ -30,6 +30,8 @@ def run_script():
 
     '''
 
+    print args.use_positivity
+
     psf_data = fits.getdata(args.psf_file)
     pos_data = fits.getdata(args.pos_file)
     mr_trans_opt = ['-t' + args.wavelet_type, '-n' + args.wavelet_scales]
