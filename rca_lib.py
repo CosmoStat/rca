@@ -694,8 +694,8 @@ def rca_main_routine(psf_stack_in,field_pos,upfact,opt,nsig,sparsity_en=True,\
         " ============================== Sources estimation =============================== "
         thresh = nsig*utils_for_rca.acc_sig_maps(shap,shift_ker_stack_adj,sig_est,flux_est,\
         flux_ref,upfact,weights,sig_data=sig_min_vect)
-        if k==1:
-            select_en = True
+        #if k==1:
+        #    select_en = True
         filters,filters_rot,Y2,Y3,cY3,comp,ind_select = \
         low_rank_global_src_est_comb(input_ref,thresh,psf_stack,ksig=nsig,eps=0.8\
         ,ainit=ainit,nb_iter=nb_subiter,tol=1,nb_rw=nb_rw,Y2=Y2,V=V,rad=None,\
