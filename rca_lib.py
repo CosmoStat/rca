@@ -297,7 +297,7 @@ def non_unif_smoothing_mult_coeff_pos_cp_6(im,src,nb_iter=100,verbose=True):
     cost = 1
     cost_old=0
     i=0
-    while (i < nb_iter and 100*abs((cost-cost_old)/cost)>0.01) or cost>1.1*ref_res :
+    while (i < nb_iter) and (100*abs((cost-cost_old)/cost)>0.01 or cost>1.1*ref_res) :
         res = copy(im)
         for k in range(0,shap[3]):
             for l in range(0,shap[2]):
@@ -364,7 +364,7 @@ def non_unif_smoothing_mult_coeff_pos_cp_5(im,src,src_hr,tree,basis,alpha_init,\
     alphax = copy(alpha)
     shap_alpha = alpha.shape
     supports = zeros((shap_alpha[0],shap_alpha[1],min(nb_iter,shapb[0])))
-    while (i < min(nb_iter,shapb[0]) and 100*abs((cost-cost_old)/cost)>0.01) or cost>1.1*ref_res :
+    while (i < min(nb_iter,shapb[0])) and (100*abs((cost-cost_old)/cost)>0.01 or cost>1.1*ref_res) :
         A = alpha.dot(basis)
         res = copy(im)
         for k in range(0,shap[3]):
@@ -454,7 +454,7 @@ def low_rank_global_src_est_comb(input,weights,y,ksig=4,eps=0.9,ainit=None,nb_it
     for l in range(0,nb_rw+1):
         if verbose:
             print l+1,"th pass/",nb_rw+1
-        while (iter<nb_iter and 100*abs(cost-cost_old)/abs(cost_old)>0.001) or iter<iter_min:
+        while (iter<nb_iter) and (100*abs(cost-cost_old)/abs(cost_old)>0.001 or iter<iter_min):
             if verbose:
                 print "tol: ",100*abs(cost-cost_old)/abs(cost_old)
             iter+=1
