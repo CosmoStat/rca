@@ -5,6 +5,7 @@ from numpy.linalg import svd,norm,inv,eigh
 from scipy.signal import fftconvolve,convolve
 import utils_for_rca
 import copy as cp
+import os
 
 def pos_proj(z,tol=0): # Puts negative entries of z to zero
     u = copy(z)
@@ -628,6 +629,7 @@ def rca_main_routine(psf_stack_in,field_pos,upfact,opt,nsig,sparsity_en=True,\
     input.append(flux_est)
     comp = zeros((upfact*shap[0],upfact*shap[1],nb_comp_max)) # Main variable
     u,mr_file = utils_for_rca.mr_trans(comp[:,:,0],opt=opt)
+    os.remove(mr_file)
     shap2 = u.shape
     comp_lr = zeros((shap[0],shap[1],nb_comp_max,shap[2]))
     i = 0
@@ -694,8 +696,8 @@ def rca_main_routine(psf_stack_in,field_pos,upfact,opt,nsig,sparsity_en=True,\
         " ============================== Sources estimation =============================== "
         thresh = nsig*utils_for_rca.acc_sig_maps(shap,shift_ker_stack_adj,sig_est,flux_est,\
         flux_ref,upfact,weights,sig_data=sig_min_vect)
-        #if k==1:
-        #    select_en = True
+        if k==1:
+            select_en = True
         filters,filters_rot,Y2,Y3,cY3,comp,ind_select = \
         low_rank_global_src_est_comb(input_ref,thresh,psf_stack,ksig=nsig,eps=0.8\
         ,ainit=ainit,nb_iter=nb_subiter,tol=1,nb_rw=nb_rw,Y2=Y2,V=V,rad=None,\
