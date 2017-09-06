@@ -1,5 +1,5 @@
 from numpy import zeros,size,where,ones,copy,around,double,sinc,random,pi,arange,\
-cos,sin,sinc,arccos,transpose,diag,sqrt,arange,floor,array,mean,roots,float64,int,\
+cos,sin,arccos,transpose,diag,sqrt,arange,floor,array,mean,roots,float64,int,\
 pi,median,rot90,argsort,tile,repeat,squeeze,swapaxes,log
 from numpy.linalg import svd,norm,inv,eigh
 from numpy.ma import outerproduct,exp
@@ -26,45 +26,27 @@ def mr_transf_transp_stack(coeff,filters_rot):
         output[:,:,i] = mr_transf_transp(coeff[:,:,:,i],filters_rot)
     return output
 
-def mr_trans_stack(stack,opt=None,path='',clean_en=False):
-    shap = stack.shape
-    coeff_list  = list()
-    mr_list = list()
-    for i in range(0,shap[2]):
-        Result,File = mr_trans(stack[:,:,i],opt=opt,path=path)
-        coeff_list.append(Result)
-        if clean_en:
-            os.remove(File)
-        else:
-            mr_list.append(File)
-    if clean_en:
-        return coeff_list
-    else:
-        return coeff_list,mr_list
-
-def mr_trans(im,opt=None,path='',exe_path=''):
-    NameImag = path+rand_file_name('.fits')
-    NameResult = path+rand_file_name('')
+def mr_trans(im,opt=None):
+    NameImag = rand_file_name('.fits')
+    NameResult = rand_file_name('')
     # Writes the input image to a fits file
     fits.writeto(NameImag,im)
     # Performing the system call
-    mr_exe = exe_path+'mr_transform'
     if opt is None:
-        subprocess.call([mr_exe, NameImag, NameResult])
+        subprocess.call(['mr_transform', NameImag, NameResult])
     else:
-        subprocess.call([mr_exe]+opt+[NameImag, NameResult])
+        subprocess.call(['mr_transform']+opt+[NameImag, NameResult])
     Result = fits.getdata(NameResult+'.mr')
 
     os.remove(NameImag)
     return swapaxes(swapaxes(Result,0,1),1,2),NameResult+'.mr'
 
-def mr_trans_2(im,filters=None,opt=None,exe_path=''):
+def mr_trans_2(im,filters=None,opt=None):
     shap = im.shape
     if filters is None:
         dirac = zeros((shap[0]-(shap[0]-1)%2,shap[1]-(shap[1]-1)%2)) # Odd dimensions needed
         dirac[int((shap[0]-(shap[0]-1)%2-1)/2),int((shap[1]-(shap[1]-1)%2-1)/2)] = 1.
-        filters,file = mr_trans(dirac,opt=opt,exe_path=exe_path)
-
+        filters,file = mr_trans(dirac,opt=opt)
         os.remove(file)
     shap_wav = filters.shape
     output = zeros((shap[0],shap[1],shap_wav[2]))
@@ -217,18 +199,14 @@ def feat_dist_mat(feat_mat):
             mat_out[i,k] = sqrt(((feat_mat[i,:]-feat_mat[ind_i[0][k],:])**2).sum())
     return mat_out
 
-def knn_interf(data,nb_neigh,return_index=False):
-    from numpy import array,float64
+def knn_interf(data,nb_neigh):
     flann = FLANN()
     data_cp = array(data, dtype=float64)
     params = flann.build_index(data_cp)
     result_temp, dists_temp = flann.nn_index(data_cp, nb_neigh+1)
     dists = dists_temp[:,1:nb_neigh+1]
     result = result_temp[:,1:nb_neigh+1]
-    if return_index:
-        return result,dists,flann
-    else:
-        return result,dists
+    return result,dists
 
 def lanczos(U,n=10,n2=None):
     if n2 is None:
@@ -290,7 +268,6 @@ def flux_estimate_stack(stack,cent=None,rad=4):
 def compute_centroid(im,sigw=None,nb_iter=4):
     if sigw is None:
         param=gaussfitter.gaussfit(im,returnfitimage=False)
-        #print param
         sigw = (param[3]+param[4])/2
     sigw = float(sigw)
     n1 = im.shape[0]
@@ -300,19 +277,15 @@ def compute_centroid(im,sigw=None,nb_iter=4):
     Wc = ones((n1,n2))
     centroid = zeros((1,2))
     # Four iteration loop to compute the centroid
-    i=0
     for i in range(0,nb_iter):
         xx = outerproduct(rx-centroid[0,0],ones(n2))
         yy = outerproduct(ones(n1),ry-centroid[0,1])
-        W = exp(-(xx**2+yy**2)/(2*sigw**2))
+        Wc = exp(-(xx**2+yy**2)/(2*sigw**2))
         centroid = zeros((1,2))
         # Estimate Centroid
-        Wc = copy(W)
         if i == 0:Wc = ones((n1,n2))
         totx=0.0
         toty=0.0
-        cx=0
-        cy=0
         for cx in range(0,n1):
             centroid[0,0] += (im[cx,:]*Wc[cx,:]).sum()*(cx)
             totx += (im[cx,:]*Wc[cx,:]).sum()
@@ -320,16 +293,15 @@ def compute_centroid(im,sigw=None,nb_iter=4):
             centroid[0,1] += (im[:,cy]*Wc[:,cy]).sum()*(cy)
             toty += (im[:,cy]*Wc[:,cy]).sum()
         centroid = centroid*array([1/totx,1/toty])
-    return (centroid,Wc)
+    return centroid
 
-def shift_est(psf_stack): #
+def shift_est(psf_stack): 
     shap = psf_stack.shape
     U = zeros((shap[2],2))
-    param=gaussfitter.gaussfit(psf_stack[:,:,0],returnfitimage=False)
     centroid_out = zeros((shap[2],2))
     for i in range(0,shap[2]):
         param=gaussfitter.gaussfit(psf_stack[:,:,i],returnfitimage=False)
-        (centroid,Wc) = compute_centroid(psf_stack[:,:,i],(param[3]+param[4])/2)
+        centroid = compute_centroid(psf_stack[:,:,i],(param[3]+param[4])/2)
         U[i,0] = centroid[0,0]-double(shap[0])/2
         U[i,1] = centroid[0,1]-double(shap[1])/2
         centroid_out[i,0]  = centroid[0,0]
@@ -345,7 +317,6 @@ def thresholding(x,thresh,thresh_type): # x is a 1D or 2D array, thresh is an ar
         n1=1
     n2=1
     if len(n)==2:n2 =n[1]
-    i,j = 0,0
     if len(n)==2:
         for i in range(0,n1):
             for j in range(0,n2):
@@ -364,9 +335,7 @@ def thresholding(x,thresh,thresh_type): # x is a 1D or 2D array, thresh is an ar
     return xthresh
 
 def thresholding_3D(x,thresh,thresh_type):
-    shap = x.shape
-    nb_plan = shap[2]
-    k=0
+    nb_plan = x.shape[2]
     xthresh = copy(x)
     for k in range(0,nb_plan):
         xthresh[:,:,k] = thresholding(copy(x[:,:,k]),thresh[:,:,k],thresh_type)
@@ -400,27 +369,17 @@ def mad(x):
 
 def im_gauss_nois_est(im,opt=['-t2','-n2'],filters=None):
     Result,filters = mr_trans_2(im,filters=filters,opt=opt)
-    siz = im.shape
     norm_wav = norm(filters[:,:,0])
-    #print norm_wav
     sigma = 1.4826*mad(Result[:,:,0])/norm_wav
     return sigma,filters
 
-def im_gauss_nois_est_cube(cube,opt=None,filters=None,return_map=False):
+def im_gauss_nois_est_cube(cube,opt=None,filters=None):
     shap = cube.shape
     sig = zeros((shap[2],))
-    map = None
-    if return_map:
-        map =ones(shap)
     for i in range(0,shap[2]):
         sig_i,filters = im_gauss_nois_est(cube[:,:,i],opt=opt,filters=filters)
         sig[i] = sig_i
-        if return_map:
-            map[:,:,i] *= sig[i]
-    if return_map:
-        return sig,filters,return_map
-    else:
-        return sig,filters
+    return sig
 
 def kernel_ext(mat,tol = 0.01): # The kernel of the matrix mat is defined as the vector space spanned by the eigenvectors corresponding to 1% of the sum of the squared singular values
     U, s, Vt = svd(mat,full_matrices=True)

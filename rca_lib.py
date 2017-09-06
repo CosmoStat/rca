@@ -543,26 +543,25 @@ def low_rank_global_src_est_comb(input,weights,y,ksig=4,eps=0.9,ainit=None,nb_it
         S = S[:,:,ind_select]
     return filters,filters_rot,Y2,Y3,cY3,S,ind_select
 
-def rca_main_routine(psf_stack_in,field_pos,upfact,opt,nsig,sparsity_en=True,\
-                                                        pix_sparsity=True,dist_weight_deg=1,shifts=None,\
-                                                        opt_shift_est=['-t2','-n2'],nsig_shift_est=5,sig_est=None,flux_est=None,nb_iter=2,\
-                                                        nb_subiter=300,nb_comp_max=10,tol=0.1,\
-                                                        positivity_en=False,nb_rw=1,lsq_en=False,\
-                                                        shifts_regist = True,wavr_en=False,verbose=True):
+
+
+
+
+def rca_main_routine(psf_stack_in,field_pos,upfact,opt,nsig,
+                     dist_weight_deg=1,shifts=None,
+                     opt_shift_est=['-t2','-n2'],nsig_shift_est=5,sig_est=None,flux_est=None,nb_iter=2,
+                     nb_subiter=300,nb_comp_max=10,tol=0.1,
+                     positivity_en=False,nb_rw=1,lsq_en=False,
+                     shifts_regist = True,wavr_en=False,verbose=True):
 
     psf_stack = copy(psf_stack_in)
     shap = psf_stack.shape
     if nb_comp_max>shap[2]:
         print "/!\ Warning: number of components higher than the number of images; reduced to ",shap[2]
-    siz_in = upfact*array(shap[0:-1])
-    if sparsity_en is False:
-        print "----- Sparsity disable -----"
-    " ============================== Degradation operator parameters estimation =============================== "
-    centroids = None
+    print " ============================== Degradation operator parameters estimation =============================== "
     if sig_est is None:
         print 'Noise level estimation...'
-        sig_est,filters_lr = utils_for_rca.im_gauss_nois_est_cube(psf_stack_in,opt=opt_shift_est)
-        #print sig_est
+        sig_est = utils_for_rca.im_gauss_nois_est_cube(psf_stack_in,opt=opt_shift_est)
         print 'Done.'
     if shifts_regist:
         if shifts is None:
@@ -587,33 +586,21 @@ def rca_main_routine(psf_stack_in,field_pos,upfact,opt,nsig,sparsity_en=True,\
     sig_min = sig_est.min()
     sig_min_vect = ones((shap[2],))*sig_min
     sig_est = sig_est/sig_min
-    nb_im = shap[2]
     for k in range(0,shap[2]):
         psf_stack[:,:,k] = psf_stack[:,:,k]/sig_est[k]
     if verbose:
         print " ------ ref energy: ",(psf_stack**2).sum()," ------- "
         print "flux min: ",flux_est.min()," flux max: ",flux_est.max(),"sig min: ",\
                 sig_est.min()," sig max: ",sig_est.max()
-    weights = None
-    ref_weights = None
-    w = ones((shap[2],))
-    im_hr = zeros((upfact*shap[0],upfact*shap[1],shap[2]))
     " ================================ FOV distances settings ================================ "
     print "Contructing PSF tree..."
     nb_neighs = shap[2]-1
     neigh,dists = utils_for_rca.knn_interf(field_pos,nb_neighs)
-    p_max = pow_law_select(dists,nb_neighs)
-    if verbose:
-        print "power max = ",p_max
-    p_min = 0.01
     print "Done..."
     dists_unsorted = utils_for_rca.feat_dist_mat(field_pos)
     dist_med = median(dists)
     dist_weights = (dist_med/dists_unsorted)**dist_weight_deg
     dist_weigths = dist_weights/dist_weights.max()
-    spec_rad_smooth = None # Spatial smoothing operator gradient lip constant estimation
-    siz_in = upfact*array(shap[0:-1])
-    eig_max = None
     " ============================== Inputs variables ============================== "
     input = list()
     x = zeros((upfact*shap[0],upfact*shap[1]))
