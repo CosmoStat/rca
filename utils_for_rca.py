@@ -144,14 +144,14 @@ def rect_crop_c(im,n1,n2,cent,dx=0,dy=0):
     if len(im.shape)>2:nb_im = im.shape[2]
     im_crop = None
     if nb_im==1:
-        im_crop = im[around(cent[0,0]+dx-n1/2):around(cent[0,0]+dx-n1/2)+n1,\
-        around(cent[0,1]+dy-n2/2):around(cent[0,1]+dy-n2/2)+n2]
+        im_crop = im[around(cent[0,0]+dx-n1/2).astype(int):around(cent[0,0]+dx-n1/2).astype(int)+n1,\
+        around(cent[0,1]+dy-n2/2).astype(int):around(cent[0,1]+dy-n2/2).astype(int)+n2]
     else:
         im_crop = zeros((n1,n2,nb_im))
         for k in range(0,nb_im):
             imk = im[:,:,k]
-            im_crop[:,:,k] = imk[around(cent[k,0]+dx-n1/2):around(cent[k,0]+dx-n1/2)\
-            +n1,around(cent[k,1]+dy-n2/2):around(cent[k,1]+dy-n2/2)+n2]
+            im_crop[:,:,k] = imk[around(cent[k,0]+dx-n1/2).astype(int):around(cent[k,0]+dx-n1/2).astype(int)\
+            +n1,around(cent[k,1]+dy-n2/2).astype(int):around(cent[k,1]+dy-n2/2).astype(int)+n2]
     return im_crop
 
 def cube_svd(cube,nb_comp=None,ind=None,mean_sub=False):
