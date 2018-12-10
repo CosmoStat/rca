@@ -1,11 +1,15 @@
 from numpy import zeros,size,where,ones,copy,around,double,sinc,random,pi,arange,\
 cos,sin,arccos,transpose,diag,sqrt,arange,floor,exp,array,mean,roots,float64,int,\
-pi,median,rot90,argsort,tile,repeat,squeeze,log,int
+pi,median,rot90,argsort,tile,repeat,squeeze,log,int,prod
 from numpy.linalg import svd,norm,inv,eigh
 from scipy.signal import fftconvolve,convolve
-import utils_for_rca
+import utils as utils_for_rca
+import utils
+import utils_for_rca as ufrk
+#import utils_for_rca
 import copy as cp
 import os
+import isap
 
 def pos_proj(z,tol=0): # Puts negative entries of z to zero
     u = copy(z)
@@ -176,27 +180,40 @@ def notch_filt_optim_2(test_mat,dist,expo_range,e_range,nb_iter=2,tol=0.01):
 
     return expo_out,e_out,loss,vect,ker,j2
 
-def analysis(cube,sig,field_pos,pmin = 0.01,emin=0.01,emax=1.99,nb_max=30,tol=0.01):
+def analysis(cube,sig,field_dist,p_min = 0.01,e_min=0.01,e_max=1.99,nb_max=30,tol=0.01):
+    """Computes graph-constraint related values, see RCA paper sections 5.2 and (especially) 5.5.3.
+    
+    
+    Calls:
+    
+    * :func:`utils.knn_interf`
+    * :func:`optim_utils.pow_law_select`
+    * :func:`utils.feat_dist_mat`
+    * :func:`utils.log_sampling`
+    * :func:`optim_utils.notch_filt_optim_2`
+    * :func:`utils.mat_to_cube`
+    """
     nb_samp_opt = 10
     shap = cube.shape
     nb_neighs = shap[2]-1
-    neigh,dists = utils_for_rca.knn_interf(field_pos,nb_neighs)
+    neigh,dists = utils.knn_interf(field_dist,nb_neighs)
     p_max = pow_law_select(dists,nb_neighs)
-    p_min = 0.01
-    e_min = 0.01
-    e_max = 1.99
-    dists_unsorted = utils_for_rca.feat_dist_mat(field_pos)
-    e_range = utils_for_rca.log_sampling(e_min,e_max,nb_samp_opt)
-    p_range = utils_for_rca.log_sampling(p_min,p_max,nb_samp_opt)
+    print "power max = ",p_max
+
+    print "Done..."
+    dists_unsorted = utils.feat_dist_mat(field_dist)
+    e_range = utils.log_sampling(e_min,e_max,nb_samp_opt)
+    p_range = utils.log_sampling(p_min,p_max,nb_samp_opt)
     res_mat = copy(transpose(cube.reshape((shap[0]*shap[1],shap[2]))))
+
     list_comp = list()
     list_e = list()
     list_p = list()
     list_ind = list()
     list_ker = list()
-    err = (cube**2).sum()
+    err = 1e20
     nb_iter = 0
-    while err>sig and nb_iter<nb_max:
+    while nb_iter<nb_max: # err>sig and
         expo_out,e_out,loss,vect,ker,j = notch_filt_optim_2(res_mat,dists_unsorted,p_range,e_range,nb_iter=3,tol=tol)
         list_e.append(e_out)
         list_p.append(expo_out)
@@ -205,6 +222,9 @@ def analysis(cube,sig,field_pos,pmin = 0.01,emin=0.01,emax=1.99,nb_max=30,tol=0.
         list_ker.append(ker)
         nb_iter+=1
         res_mat = res_mat-transpose(vect).dot(vect.dot(res_mat))
+        print "nb_comp: ",nb_iter," residual: ",loss," e: ",e_out," p: ",expo_out,"chosen index: ",j,"/",shap[2]
+        err = sum(res_mat**2)
+
     e_vect = zeros((nb_iter,))
     p_vect = zeros((nb_iter,))
     weights = zeros((nb_iter,shap[2]))
@@ -216,11 +236,15 @@ def analysis(cube,sig,field_pos,pmin = 0.01,emin=0.01,emax=1.99,nb_max=30,tol=0.
         weights[i,:] = list_comp[i].reshape((shap[2],))
         ker[i*shap[2]:(i+1)*shap[2],:] = list_ker[i]
         ind[i,i*shap[2]+list_ind[i]] = 1
+
+
     res_mat = copy(transpose(cube.reshape((shap[0]*shap[1],shap[2]))))
     proj_coeff = weights.dot(res_mat)
-    comp = utils_for_rca.mat_to_cube(proj_coeff,shap[0],shap[1])
+    comp = utils.mat_to_cube(proj_coeff,shap[0],shap[1])
+
     proj_data = transpose(weights).dot(proj_coeff)
-    proj_data = utils_for_rca.mat_to_cube(proj_data,shap[0],shap[1])
+    proj_data = utils.mat_to_cube(proj_data,shap[0],shap[1])
+
     return e_vect,p_vect,weights,comp,proj_data,ker,ind
 
 def pow_law_select(dist_weights,nb_neigh,min_val=10**(-15)):
@@ -427,13 +451,13 @@ def low_rank_global_src_est_comb(input,weights,y,ksig=4,eps=0.9,ainit=None,nb_it
     spec_rad3 = 0
     if wavr_en:
         if Y3 is None or filters is None:
-            Y3,filters = utils_for_rca.mr_trans_stack_2(S*0,opt=optr)
-            filters_rot = utils_for_rca.rot90_stack(filters)
+            Y3,filters = isap.mr_trans_stack_2(S*0,opt=optr)
+            filters_rot = ufrk.rot90_stack(filters)
             Y3[:,:,-1,:]*=0 # Puts the coarse scales to 0
         for i in range(0,filters.shape[2]):
             spec_rad3 +=(abs(filters[:,:,i]).sum())**2
         spec_rad3 = sqrt(spec_rad3)
-        weights_an_temp,filters_temp = utils_for_rca.mr_trans_stack_2(weights,filters=filters**2)
+        weights_an_temp,filters_temp = isap.mr_trans_stack_2(weights,filters=filters**2)
         weights_an = 4*sqrt(weights_an_temp[:,:,:-1,:])
         rweights_an = copy(Y3[:,:,:-1,:])
     if wavr_en and pos_en:
@@ -473,7 +497,7 @@ def low_rank_global_src_est_comb(input,weights,y,ksig=4,eps=0.9,ainit=None,nb_it
             temp31 = None
             ctemp31 = None
             if wavr_en:
-                temp31 = utils_for_rca.mr_transf_transp_stack(Y3,filters_rot)
+                temp31 = isap.mr_transf_transp_stack(Y3,filters_rot)
             temp3 = None
             ctemp3 = None
             if wavr_en and pos_en:
@@ -497,7 +521,7 @@ def low_rank_global_src_est_comb(input,weights,y,ksig=4,eps=0.9,ainit=None,nb_it
                 tY2 = -pos_proj_cube(-Y2-temp2/spec_rad)
                 Y2 = Y2+(1-1.0/(iter+1))*(tY2-Y2)
             if wavr_en:
-                temp3,filters = utils_for_rca.mr_trans_stack_2(Y,filters=filters)
+                temp3,filters = isap.mr_trans_stack_2(Y,filters=filters)
                 for k in range(0,shapS[2]):
                     temp4 = None
                     if l==0:
@@ -516,7 +540,7 @@ def low_rank_global_src_est_comb(input,weights,y,ksig=4,eps=0.9,ainit=None,nb_it
                 if verbose:
                     print "Weighted l1 norm direct domain: ",(abs(weights*rweights*S)).sum()
             else:
-                trans_data,filters = utils_for_rca.mr_trans_stack_2(S,filters=filters)
+                trans_data,filters = isap.mr_trans_stack_2(S,filters=filters)
                 if verbose:
                     if l==0:
                         print "Weighted l1 norm analysis: ",(abs(trans_data[:,:,:-1,:])).sum()
@@ -561,7 +585,7 @@ def rca_main_routine(psf_stack_in,field_pos,upfact,opt,nsig,
     print " ============================== Degradation operator parameters estimation =============================== "
     if sig_est is None:
         print 'Noise level estimation...'
-        sig_est = utils_for_rca.im_gauss_nois_est_cube(psf_stack_in,opt=opt_shift_est)
+        sig_est, filters = utils_for_rca.im_gauss_nois_est_cube(psf_stack_in,opt=opt_shift_est)
         print 'Done.'
     if shifts_regist:
         if shifts is None:
@@ -615,7 +639,7 @@ def rca_main_routine(psf_stack_in,field_pos,upfact,opt,nsig,
     input.append(sig_est)
     input.append(flux_est)
     comp = zeros((upfact*shap[0],upfact*shap[1],nb_comp_max)) # Main variable
-    u,mr_file = utils_for_rca.mr_trans(comp[:,:,0],opt=opt)
+    u,mr_file = isap.mr_trans(comp[:,:,0],opt=opt)
     os.remove(mr_file)
     shap2 = u.shape
     comp_lr = zeros((shap[0],shap[1],nb_comp_max,shap[2]))
@@ -652,8 +676,8 @@ def rca_main_routine(psf_stack_in,field_pos,upfact,opt,nsig,
                 weights[l,:] /= a
     else:
         if shifts_regist:
-            e_opt,p_opt,weights,comp_temp,data,ker,alph_ref  = analysis(utils_for_rca.rect_crop_c(res,int(0.9*shap[0])\
-            ,int(0.9*shap[1]),centroids),int(0.9*shap[0])*int(0.9*shap[1])*sig_min**2,field_pos,tol=0,nb_max=nb_comp_max)
+            e_opt,p_opt,weights,comp_temp,data,ker,alph_ref  = analysis(ufrk.rect_crop_c(res,int(0.9*shap[0])\
+            ,int(0.9*shap[1]),centroids),0.1*prod(shap)*sig_min**2,field_pos,nb_max=nb_comp_max)
         else:
             e_opt,p_opt,weights,comp_temp,data,ker,alph_ref  = analysis(res,int(0.9*shap[0])*int(0.9*shap[1])*sig_min**2,\
                                                                        field_pos,tol=0,nb_max=nb_comp_max)
@@ -681,7 +705,7 @@ def rca_main_routine(psf_stack_in,field_pos,upfact,opt,nsig,
 
     for k in range(0,nb_iter):
         " ============================== Sources estimation =============================== "
-        thresh = nsig*utils_for_rca.acc_sig_maps(shap,shift_ker_stack_adj,sig_est,flux_est,\
+        thresh = nsig*ufrk.acc_sig_maps(shap,shift_ker_stack_adj,sig_est,flux_est,\
         flux_ref,upfact,weights,sig_data=sig_min_vect)
         if k==1:
             select_en = True
