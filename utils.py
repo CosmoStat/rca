@@ -12,6 +12,16 @@ from scipy import interpolate
 
 import scipy.linalg as sci_lin
 
+def rca_format(cube):
+    """ Switch from "regular" format to "RCA" format (ie. image index is contained
+    on last/2nd axis)"""
+    return cube.swapaxes(0,1).swapaxes(1,2)
+
+def reg_format(rca_cube):
+    """ Switch from "RCA" format to "regular" format (ie. image index is contained
+    on 0th axis)."""
+    return rca_cube.swapaxes(2,1).swapaxes(1,0)
+
 def diagonally_dominated_mat(shap,sig=4.,thresh_en=True,coord_map=None,pol_en=False,pol_mod=False,theta_param=1,cent=None):
     """**[???]**
     

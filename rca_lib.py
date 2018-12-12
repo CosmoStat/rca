@@ -1,6 +1,7 @@
 from numpy import zeros,size,where,ones,copy,around,double,sinc,random,pi,arange,\
 cos,sin,arccos,transpose,diag,sqrt,arange,floor,exp,array,mean,roots,float64,int,\
 pi,median,rot90,argsort,tile,repeat,squeeze,log,int,prod
+import numpy as np
 from numpy.linalg import svd,norm,inv,eigh
 from scipy.signal import fftconvolve,convolve
 import utils as utils_for_rca
@@ -44,25 +45,27 @@ def pos_proj_cube(m,tol=0):
         u[:,:,k]=pos_proj_mat(squeeze(m[:,:,k]),tol=0)
     return u
 
+def degradation_op(S, A_i, shift_ker, upfact):
+    """ Shift and decimate reconstructed PSF."""
+    return utils_for_rca.decim(fftconvolve(S.dot(A_i),
+             shift_ker,mode='same'),upfact,av_en=0)
+
 def sr_stack_op(input):
+    """ Apply degradation operator and renormalize."""
     S = input[0]
     upfact = input[1]
     ker = input[2]
-    ker_adj = input[3]
-    shap = ker_adj.shape
     A = input[4]
     sig = input[5]
     flux = input[6]
-    flux_ref = median(flux)
-    nb_im = shap[2]
-    shapS = S.shape
-    output = zeros((shapS[0]/upfact,shapS[1]/upfact,nb_im))
-    for i in range(0,nb_im):
-        im_i = zeros((shapS[0],shapS[1]))
-        for j in range(0,shapS[2]):
-            im_i+=S[:,:,j]*A[j,i]
-        output[:,:,i] = (flux[i]/(flux_ref*sig[i]))*utils_for_rca.decim(fftconvolve(im_i,ker[:,:,i],mode='same'),upfact,av_en=0)
-    return output
+    flux_ref = np.median(flux)
+
+    normfacs = flux/(flux_ref*sig)
+
+    output = np.array([nf * degradation_op(S,A_i,shift_ker, upfact) 
+                       for nf,A_i,shift_ker in zip(normfacs, A.T, utils.reg_format(ker))])
+    
+    return utils.rca_format(output)
 
 def sr_stack_trans(input):
     y = input[0]
