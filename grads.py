@@ -88,7 +88,7 @@ class SourceGrad(GradParent, PowerMethod):
         """
         normfacs = self.flux / (np.median(self.flux)*self.sig)
         dec_rec = np.array([nf * self.degradation_op(S,A_i,shift_ker) for nf,A_i,shift_ker 
-                       in zip(normfacs, self.A.T, utils.reg_format(self.ker_rot))])
+                       in zip(normfacs, self.A.T, utils.reg_format(self.ker))])
         self._current_rec = utils.rca_format(dec_rec)
         return self._current_rec
 
@@ -109,8 +109,8 @@ class SourceGrad(GradParent, PowerMethod):
 
         """
         normfacs = self.flux / (np.median(self.flux)*self.sig)
-        upsamp_x = np.array([nf * self.adjoint_degradation_op(S,A_i,shift_ker) for nf,A_i,shift_ker 
-                       in zip(normfacs, self.A.T, utils.reg_format(self.ker))])
+        upsamp_x = np.array([nf * self.adjoint_degradation_op(x,A_i,shift_ker) for nf,A_i,shift_ker 
+                       in zip(normfacs, self.A.T, utils.reg_format(self.ker_rot))])
         return utils.rca_format(upsamp_x)
                 
     def cost(self, x, y=None, verbose=False):
