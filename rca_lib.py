@@ -739,6 +739,7 @@ def rca_main_routine(psf_stack_in,field_pos,upfact,opt,nsig,
                 pos_en=positivity_en)
             list_surv = list()
             for l in range(0,comp.shape[2]):
+                #[MAS]: a is just a normalization so one of the two matrices is norm-normalized
                 a = sqrt((weights_k[l,:]**2).sum())
                 if a>0:
                     list_surv.append(l)
