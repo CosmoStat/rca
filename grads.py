@@ -25,10 +25,11 @@ class SourceGrad(GradParent, PowerMethod):
         
     Notes
     -----
-    The properties of `GradBasic` and `PowerMethod` are inherited in this class
+    The properties of `GradParent` and `PowerMethod` are inherited in this class
     """
 
-    def __init__(self, data, A, flux, sig, ker, ker_rot, D):
+    def __init__(self, data, A, flux, sig, ker, ker_rot, D, data_type='float'):
+        self._grad_data_type = data_type
         self.obs_data = data
         self.op = self.MX 
         self.trans_op = self.MtX 
