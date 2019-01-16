@@ -10,8 +10,6 @@ class SourceGrad(GradParent, PowerMethod):
     ----------
     data : np.ndarray
         Input data array, a array of 2D observed images (i.e. with noise)
-    S : np.ndarray
-        Current estimation of eigenPSFs
     A : np.ndarray
         Current estimation of corresponding coefficients
     flux : np.ndarray
@@ -24,49 +22,34 @@ class SourceGrad(GradParent, PowerMethod):
         Inverted shifting kernels
     D : float
         Upsampling factor
-    data_type : type
         
     Notes
     -----
     The properties of `GradBasic` and `PowerMethod` are inherited in this class
     """
 
-    def __init__(self, data, A, flux, sig, ker, ker_rot, D, data_type=float):
-        self._grad_data_type = data_type
+    def __init__(self, data, A, flux, sig, ker, ker_rot, D):
         self.obs_data = data
         self.op = self.MX 
         self.trans_op = self.MtX 
-        shap = data.shape
-        self.shape = (shap[0]*D,shap[1]*D)
-        self.D = D
         self.A = np.copy(A)
         self.flux = flux
         self.sig = sig
         self.ker = ker
         self.ker_rot  = ker_rot
+        self.D = D
+        #shap = data.shape
+        #self.shape = (shap[0]*D,shap[1]*D)
         #PowerMethod.__init__(self, self.trans_op_op, (np.prod(self.shape),np.prod(self.shape),A.shape[0]))
         #print " > SPECTRAL RADIUS:\t{}".format(self.spec_rad)
-        #TODO: uncomment
+        #TODO: uncomment?
         
         self._current_rec = None # stores latest application of self.MX
-
-    def set_A(self,A_new,pwr_en=True):
-        self.A = np.copy(A_new)
-        if pwr_en:
-            PowerMethod.__init__(self, self.trans_op_op, (np.prod(self.shape),np.prod(self.shape),self.A.shape[0]))
-
-    def set_flux(self,flux_new,pwr_en=False):
-        self.flux = np.copy(flux_new)
-        if pwr_en:
-            PowerMethod.__init__(self, self.trans_op_op, (np.prod(self.shape),np.prod(self.shape),self.A.shape[0]))
-
-    def get_flux(self):
-        return self.flux
 
     def degradation_op(self, S, A_i, shift_ker):
         """ Shift and decimate reconstructed PSF."""
         return utils.decim(fftconvolve(S.dot(A_i),
-                                       shift_ker,mode='same'),self.D,av_en=0)
+                           shift_ker,mode='same'),self.D,av_en=0)
 
     def adjoint_degradation_op(self, x_i, shift_ker):
         """ Apply adjoint of the degradation operator."""
