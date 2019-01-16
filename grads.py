@@ -68,10 +68,10 @@ class SourceGrad(GradParent, PowerMethod):
         return utils.decim(fftconvolve(S.dot(A_i),
                                        shift_ker,mode='same'),self.D,av_en=0)
 
-    def adjoint_degradation_op(self, S, A_i, shift_ker):
+    def adjoint_degradation_op(self, x_i, shift_ker):
         """ Apply adjoint of the degradation operator."""
-        return fftconvolve(utils.transpose_decim(S,self.D),
-                           shift_ker,mode='same').dot(A_i)
+        return fftconvolve(utils.transpose_decim(x_i,self.D),
+                           shift_ker,mode='same')
 
     def MX(self, S):
         """Apply degradation operator and renormalize.
@@ -109,9 +109,11 @@ class SourceGrad(GradParent, PowerMethod):
 
         """
         normfacs = self.flux / (np.median(self.flux)*self.sig)
-        upsamp_x = np.array([nf * self.adjoint_degradation_op(x,A_i,shift_ker) for nf,A_i,shift_ker 
-                       in zip(normfacs, self.A.T, utils.reg_format(self.ker_rot))])
-        return utils.rca_format(upsamp_x)
+        x = utils.reg_format(x)
+        upsamp_x = np.array([nf * self.adjoint_degradation_op(x_i,shift_ker) for nf,x_i,shift_ker 
+                       in zip(normfacs, x, utils.reg_format(self.ker_rot))])
+        x, upsamp_x = utils.rca_format(x), utils.rca_format(upsamp_x)
+        return upsamp_x.dot(self.A.T)
                 
     def cost(self, x, y=None, verbose=False):
         """ Compute data fidelity term. ``y`` is unused (it's just so ``modopt.opt.algorithms.Condat`` can feed
