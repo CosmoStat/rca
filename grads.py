@@ -106,9 +106,6 @@ class SourceGrad(GradParent, PowerMethod):
         if isinstance(self._current_rec, type(None)):
             self._current_rec = self.MX(x)
         cost_val = 0.5 * np.linalg.norm(self._current_rec - self.obs_data) ** 2
-        if verbose:
-            print " > MIN(X):\t{}".format(np.min(x))
-            print " > Current cost: {}".format(cost_val)
         return cost_val
                 
     def get_grad(self, x):
