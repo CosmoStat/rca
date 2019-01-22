@@ -11,6 +11,13 @@ import utils_for_rca as ufrk
 import copy as cp
 import os
 import isap
+import modopt.opt.algorithms as optimalg
+from modopt.opt.proximity import Positivity, IdentityProx
+from modopt.opt.linear import LinearParent
+from modopt.signal.wavelet import get_mr_filters, filter_convolve
+import proxs as rca_prox
+import grads
+
 
 def pos_proj(z,tol=0): # Puts negative entries of z to zero
     u = copy(z)
@@ -461,7 +468,7 @@ def low_rank_global_src_est_comb(input,weights,y,ksig=4,eps=0.9,ainit=None,nb_it
             spec_rad3 +=(abs(filters[:,:,i]).sum())**2
         spec_rad3 = sqrt(spec_rad3)
         weights_an_temp,filters_temp = isap.mr_trans_stack_2(weights,filters=filters**2)
-        weights_an = 4*sqrt(weights_an_temp[:,:,:-1,:])
+        weights_an = 4*sqrt(weights_an_temp[:,:,:-1,:]) # that :-1 is to remove coarse scale
         rweights_an = copy(Y3[:,:,:-1,:])
     if wavr_en and pos_en:
         spec_rad = spec_rad1+spec_rad2+spec_rad3
@@ -703,20 +710,35 @@ def rca_main_routine(psf_stack_in,field_pos,upfact,opt,nsig,
     input_ref.append(sig_est)
     input_ref.append(flux_est)
     survivors = ones((nb_comp_max,))
-
-
-
+    
+    # initialize dual variable and compute Starlet filters for Condat source updates 
+    dual_var = np.zeros((im_hr.shape))
+    starlet_filters = get_mr_filters(im_hr.shape[:2], opt=opt, coarse = True)
+    
     for k in range(0,nb_iter):
         " ============================== Sources estimation =============================== "
-        thresh = nsig*ufrk.acc_sig_maps(shap,shift_ker_stack_adj,sig_est,flux_est,\
-        flux_ref,upfact,weights,sig_data=sig_min_vect)
-        if k==1:
-            select_en = True
-        filters,filters_rot,Y2,Y3,cY3,comp,ind_select = \
-        low_rank_global_src_est_comb(input_ref,thresh,psf_stack,ksig=nsig,eps=0.8\
-        ,ainit=ainit,nb_iter=nb_subiter,tol=1,nb_rw=nb_rw,Y2=Y2,V=V,rad=None,\
-        select_en=select_en,wavr_en=wavr_en,optr=opt,pos_en=positivity_en,\
-        filters=filters,filters_rot=filters_rot,verbose=verbose)
+        # update S gradient instance with new weights
+        source_grad = grads.SourceGrad(psf_stack, weights, flux_est, sig_est, 
+                                      shift_ker_stack, shift_ker_stack_adj, upfact)
+
+        # and prox's, starting with sparsity in Starlet domain (this is actually assuming synthesis form)...
+        thresh = utils.reg_format(ufrk.acc_sig_maps(shap,shift_ker_stack_adj,sig_est,flux_est,
+                                        flux_ref,upfact,weights,sig_data=sig_min_vect))
+        thresholds = nsig * np.sqrt(np.array([filter_convolve(Sigma_k**2, starlet_filters**2) 
+                                          for Sigma_k in thresh]))
+        sparsity_prox = rca_prox.StarletThreshold(starlet_filters, thresholds)
+
+        # ... and linear operator for positivity of $S\alpha V^\top$
+        lin_recombine = LinearParent(lambda S: S.dot(weights), lambda Y: Y.dot(weights.T))
+
+        # and run source update:
+        source_optim = optimalg.Condat(comp, dual_var, source_grad, sparsity_prox, Positivity(), 
+                                       linear = lin_recombine, max_iter=nb_subiter)
+        comp = source_optim.x_final
+        
+        #TODO: replace line below with Fred's component selection (to be extracted from `low_rank_global_src_est_comb`)
+        ind_select = range(comp.shape[2])
+
         comp_lr = zeros((shap[0],shap[1],comp.shape[2],shap[2]))
         survivors = zeros((nb_comp_max,))
         for l in range(0,comp.shape[2]):
@@ -726,6 +748,7 @@ def rca_main_routine(psf_stack_in,field_pos,upfact,opt,nsig,
                 shift_ker_stack[:,:,p],mode='same'),upfact,av_en=0)
         id0 = where((survivors==1))
         id = id0[0]
+
         " ============================== Weights estimation =============================== "
         n_max = nb_iter-1
         if k < n_max:
@@ -739,7 +762,6 @@ def rca_main_routine(psf_stack_in,field_pos,upfact,opt,nsig,
                 pos_en=positivity_en)
             list_surv = list()
             for l in range(0,comp.shape[2]):
-                #[MAS]: a is just a normalization so one of the two matrices is norm-normalized
                 a = sqrt((weights_k[l,:]**2).sum())
                 if a>0:
                     list_surv.append(l)
