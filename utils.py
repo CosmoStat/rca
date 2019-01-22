@@ -7,6 +7,7 @@ import sys
 sys.path.append('../utilities')
 import gaussfitter
 import datetime,time
+import numpy as np
 
 from scipy import interpolate
 
@@ -173,6 +174,15 @@ def compute_centroid(im,sigw=None,nb_iter=4):
 
 
     return (centroid,Wc)
+
+def SoftThresholding(data,thresh):
+    """ Performs element-wise soft thresholding."""
+    thresh_data = np.copy(data)
+    belowmask = (np.abs(data) <= thresh)
+    abovemask = np.array(1.-belowmask).astype(bool)
+    thresh_data[belowmask] = 0.
+    thresh_data[abovemask] = (data - np.sign(data)*thresh)[abovemask]
+    return thresh_data
 
 def thresholding(x,thresh,thresh_type): 
     """ Performs either soft- (``thresh_type=1``) or hard-thresholding (``thresh_type=0``). Input can be 1D or 2D array.

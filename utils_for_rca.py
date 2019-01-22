@@ -109,6 +109,11 @@ def transpose_decim(im,decim_fact,av_en=0):
     return im_out
 
 def acc_sig_map(shap_im,ker_stack,sig_est,flux_est,flux_ref,upfact,w,sig_data=None):
+    """ Computes the square root of $\mathcal{F}^{2*}(\hat\sigma^2)(A^\top\odot A^\top)$
+    See equation (27) in RCA paper.
+    Note $\mathrm{Var}(B)$ has been replaced by the noise level as estimated from the data),
+    and here we do not have the term $\mu$ (gradient step size in the paper).
+    """
     shap = ker_stack.shape
     nb_im = shap[2]
     if sig_data is None:
