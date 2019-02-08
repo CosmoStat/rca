@@ -39,13 +39,17 @@ class SourceGrad(GradParent, PowerMethod):
         self.ker = ker
         self.ker_rot  = ker_rot
         self.D = D
-        #shap = data.shape
-        #self.shape = (shap[0]*D,shap[1]*D)
-        #PowerMethod.__init__(self, self.trans_op_op, (np.prod(self.shape),np.prod(self.shape),A.shape[0]))
-        #print " > SPECTRAL RADIUS:\t{}".format(self.spec_rad)
-        #TODO: uncomment?
+        # initialize Power Method to compute spectral radius
+        hr_shape = np.array(data.shape[:2])*D
+        PowerMethod.__init__(self, self.trans_op_op, 
+                        tuple(hr_shape)+(A.shape[0],), auto_run=False)
         
         self._current_rec = None # stores latest application of self.MX
+
+    def update_A(self, new_A, update_spectral_radius=True):
+        self.A = new_A
+        if update_spectral_radius:
+            PowerMethod.get_spec_rad(self)
 
     def degradation_op(self, S, A_i, shift_ker):
         """ Shift and decimate reconstructed PSF."""
