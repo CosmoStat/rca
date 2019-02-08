@@ -7,7 +7,6 @@ from scipy.signal import fftconvolve,convolve
 import utils as utils_for_rca
 import utils
 import utils_for_rca as ufrk
-#import utils_for_rca
 import copy as cp
 import os
 import isap
@@ -714,26 +713,44 @@ def rca_main_routine(psf_stack_in,field_pos,upfact,opt,nsig,
     # initialize dual variable and compute Starlet filters for Condat source updates 
     dual_var = np.zeros((im_hr.shape))
     starlet_filters = get_mr_filters(im_hr.shape[:2], opt=opt, coarse = True)
+    rho_phi = np.sqrt(np.sum(
+                        np.sum(np.abs(starlet_filters),axis=(1,2))**2))
     
+    # Set up source updates, starting with the gradient
+    source_grad = grads.SourceGrad(psf_stack, weights, flux_est, sig_est, 
+                                  shift_ker_stack, shift_ker_stack_adj, upfact)
+
+    # sparsity in Starlet domain prox (this is actually assuming synthesis form)
+    sparsity_prox = rca_prox.StarletThreshold(starlet_filters, 0)
+
+    # and the linear recombination for the positivity constraint
+    lin_recombine = rca_prox.LinRecombine(weights)
+
     for k in range(0,nb_iter):
         " ============================== Sources estimation =============================== "
-        # update S gradient instance with new weights
-        source_grad = grads.SourceGrad(psf_stack, weights, flux_est, sig_est, 
-                                      shift_ker_stack, shift_ker_stack_adj, upfact)
+        # update gradient instance with new weights...
+        source_grad.update_A(weights)
+        
+        # ... update linear recombination weights...
+        lin_recombine.update_A(weights)
+        
+        # ... set optimization parameters...
+        beta = source_grad.spec_rad + rho_phi
+        tau = 1./beta
+        sigma = 1./lin_recombine.norm * beta/2
 
-        # and prox's, starting with sparsity in Starlet domain (this is actually assuming synthesis form)...
+        # ... update sparsity prox thresholds...
         thresh = utils.reg_format(ufrk.acc_sig_maps(shap,shift_ker_stack_adj,sig_est,flux_est,
                                         flux_ref,upfact,weights,sig_data=sig_min_vect))
         thresholds = nsig * np.sqrt(np.array([filter_convolve(Sigma_k**2, starlet_filters**2) 
                                           for Sigma_k in thresh]))
-        sparsity_prox = rca_prox.StarletThreshold(starlet_filters, thresholds)
 
-        # ... and linear operator for positivity of $S\alpha V^\top$
-        lin_recombine = LinearParent(lambda S: S.dot(weights), lambda Y: Y.dot(weights.T))
-
+        sparsity_prox.update_threshold(tau*thresholds)
+        
         # and run source update:
         source_optim = optimalg.Condat(comp, dual_var, source_grad, sparsity_prox, Positivity(), 
-                                       linear = lin_recombine, max_iter=nb_subiter)
+                                               linear = lin_recombine, max_iter=nb_subiter,
+                                                tau=tau, sigma=sigma)
         comp = source_optim.x_final
         
         #TODO: replace line below with Fred's component selection (to be extracted from `low_rank_global_src_est_comb`)
@@ -762,6 +779,7 @@ def rca_main_routine(psf_stack_in,field_pos,upfact,opt,nsig,
                 pos_en=positivity_en)
             list_surv = list()
             for l in range(0,comp.shape[2]):
+                #[MAS]: a is just a normalization so one of the two matrices is norm-normalized
                 a = sqrt((weights_k[l,:]**2).sum())
                 if a>0:
                     list_surv.append(l)
