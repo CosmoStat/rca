@@ -5,7 +5,30 @@ from utils import lineskthresholding, reg_format, rca_format, SoftThresholding
 from modopt.signal.noise import thresh
 from modopt.signal.wavelet import filter_convolve
 import numpy as np
+from modopt.opt.linear import LinearParent
 
+
+class LinRecombine(object):
+    """ Multiply eigenvectors and weights."""
+    def __init__(self, A, compute_norm=False):
+        self.A = A
+        self.op = self.recombine
+        self.adj_op = self.adj_rec
+        if compute_norm:
+            U, s, Vt = np.linalg.svd(self.A.dot(self.A.T),full_matrices=False)
+            self.norm = np.sqrt(s[0])
+        
+    def recombine(self, S):
+        return S.dot(self.A)
+        
+    def adj_rec(self, Y):
+        return Y.dot(self.A.T)
+        
+    def update_A(self, new_A, update_norm=True):
+        self.A = new_A
+        if update_norm:
+            U, s, Vt = np.linalg.svd(self.A.dot(self.A.T),full_matrices=False)
+            self.norm = np.sqrt(s[0])
 
 class KThreshold(object):
     """ KThreshold proximity operator
@@ -69,6 +92,11 @@ class StarletThreshold(object):
         # get Starlet filters
         self._filters = filters
         self._thresh_type = thresh_type
+
+    def update_threshold(self, new_threshold, new_thresh_type=None):
+        self.threshold = new_threshold
+        if new_thresh_type in ['soft', 'hard']:
+            self._thresh_type = new_thresh_type
 
     def op(self, data, **kwargs):
         """Operator
