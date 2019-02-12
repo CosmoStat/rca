@@ -56,7 +56,7 @@ class CoeffGrad(GradParent, PowerMethod):
         """
         normfacs = self.flux / (np.median(self.flux)*self.sig)
         A = alph.dot(self.VT) 
-        dec_rec = np.array([nf * degradation_op(self.S,A_i,shift_ker) for nf,A_i,shift_ker 
+        dec_rec = np.array([nf * degradation_op(self.S,A_i,shift_ker,self.D) for nf,A_i,shift_ker 
                        in zip(normfacs, A.T, utils.reg_format(self.ker))])
         self._current_rec = utils.rca_format(dec_rec)
         return self._current_rec
@@ -81,8 +81,8 @@ class CoeffGrad(GradParent, PowerMethod):
         x = utils.reg_format(x)
         upsamp_x = np.array([nf * adjoint_degradation_op(x_i,shift_ker,self.D) for nf,x_i,shift_ker 
                        in zip(normfacs, x, utils.reg_format(self.ker_rot))])
-        x, upsamp_x = utils.rca_format(x).reshape(), utils.rca_format(upsamp_x)
-        STx = self.S.reshape(-1,self.hr_npix).dot(x.reshape(self.hr_npix,-1))
+        x, upsamp_x = utils.rca_format(x), utils.rca_format(upsamp_x)
+        STx = self.S.T.reshape(-1,self.hr_npix).dot(upsamp_x.reshape(self.hr_npix,-1))
         return STx.dot(self.VT.T) #aka... "V"
                 
     def cost(self, x, y=None, verbose=False):
@@ -172,7 +172,7 @@ class SourceGrad(GradParent, PowerMethod):
 
         """
         normfacs = self.flux / (np.median(self.flux)*self.sig)
-        dec_rec = np.array([nf * degradation_op(S,A_i,shift_ker) for nf,A_i,shift_ker 
+        dec_rec = np.array([nf * degradation_op(S,A_i,shift_ker,self.D) for nf,A_i,shift_ker 
                        in zip(normfacs, self.A.T, utils.reg_format(self.ker))])
         self._current_rec = utils.rca_format(dec_rec)
         return self._current_rec
