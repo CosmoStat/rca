@@ -82,6 +82,10 @@ class KThreshold(object):
 
         return lineskthresholding(data,self.iter_func(self.iter))
         
+    def cost(self, x):
+        """Indicator of $\Omega$ is either 0 or infinity.
+        """
+        return 0 
         
 class StarletThreshold(object):
     """Apply soft thresholding in Starlet domain.
