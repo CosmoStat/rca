@@ -5,9 +5,9 @@ import utils
 from scipy.signal import fftconvolve
 
 
-def degradation_op(S, A_i, shift_ker, D):
-    """ Shift and decimate reconstructed PSF."""
-    return utils.decim(fftconvolve(S.dot(A_i),shift_ker,mode='same'),
+def degradation_op(X, shift_ker, D):
+    """ Shift and decimate fine-grid image."""
+    return utils.decim(fftconvolve(X,shift_ker,mode='same'),
                        D,av_en=0)
 
 def adjoint_degradation_op(x_i, shift_ker, D):
@@ -40,6 +40,7 @@ class CoeffGrad(GradParent, PowerMethod):
         self.S = new_S
         if update_spectral_radius:
             PowerMethod.get_spec_rad(self)
+        print ' > WEIGHT GRAD STEP:\t{}'.format(self.inv_spec_rad)
 
     def MX(self, alph):
         """Apply degradation operator and renormalize.
@@ -56,7 +57,7 @@ class CoeffGrad(GradParent, PowerMethod):
         """
         normfacs = self.flux / (np.median(self.flux)*self.sig)
         A = alph.dot(self.VT) 
-        dec_rec = np.array([nf * degradation_op(self.S,A_i,shift_ker,self.D) for nf,A_i,shift_ker 
+        dec_rec = np.array([nf * degradation_op(self.S.dot(A_i),shift_ker,self.D) for nf,A_i,shift_ker 
                        in zip(normfacs, A.T, utils.reg_format(self.ker))])
         self._current_rec = utils.rca_format(dec_rec)
         return self._current_rec
@@ -172,7 +173,7 @@ class SourceGrad(GradParent, PowerMethod):
 
         """
         normfacs = self.flux / (np.median(self.flux)*self.sig)
-        dec_rec = np.array([nf * degradation_op(S,A_i,shift_ker,self.D) for nf,A_i,shift_ker 
+        dec_rec = np.array([nf * degradation_op(S.dot(A_i),shift_ker,self.D) for nf,A_i,shift_ker 
                        in zip(normfacs, self.A.T, utils.reg_format(self.ker))])
         self._current_rec = utils.rca_format(dec_rec)
         return self._current_rec
