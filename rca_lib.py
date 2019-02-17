@@ -13,6 +13,7 @@ import isap
 import modopt.opt.algorithms as optimalg
 from modopt.opt.proximity import Positivity, IdentityProx
 from modopt.opt.linear import LinearParent
+from modopt.opt.cost import costObj
 from modopt.signal.wavelet import get_mr_filters, filter_convolve
 import proxs as rca_prox
 import grads
@@ -685,10 +686,10 @@ def rca_main_routine(psf_stack_in,field_pos,upfact,opt,nsig,
                 weights[l,:] /= a
     else:
         if shifts_regist:
-            e_opt,p_opt,weights,comp_temp,data,ker,alph_ref  = analysis(ufrk.rect_crop_c(res,int(0.9*shap[0])\
+            e_opt,p_opt,weights,comp_temp,data,VT,alph_ref  = analysis(ufrk.rect_crop_c(res,int(0.9*shap[0])\
             ,int(0.9*shap[1]),centroids),0.1*prod(shap)*sig_min**2,field_pos,nb_max=nb_comp_max)
         else:
-            e_opt,p_opt,weights,comp_temp,data,ker,alph_ref  = analysis(res,int(0.9*shap[0])*int(0.9*shap[1])*sig_min**2,\
+            e_opt,p_opt,weights,comp_temp,data,VT,alph_ref  = analysis(res,int(0.9*shap[0])*int(0.9*shap[1])*sig_min**2,\
                                                                        field_pos,tol=0,nb_max=nb_comp_max)
         alph = alph_ref
         for l in range(0,nb_comp_max):
@@ -710,6 +711,7 @@ def rca_main_routine(psf_stack_in,field_pos,upfact,opt,nsig,
     input_ref.append(flux_est)
     survivors = ones((nb_comp_max,))
     
+    #### Source updates set-up ####
     # initialize dual variable and compute Starlet filters for Condat source updates 
     dual_var = np.zeros((im_hr.shape))
     starlet_filters = get_mr_filters(im_hr.shape[:2], opt=opt, coarse = True)
@@ -725,6 +727,18 @@ def rca_main_routine(psf_stack_in,field_pos,upfact,opt,nsig,
 
     # and the linear recombination for the positivity constraint
     lin_recombine = rca_prox.LinRecombine(weights)
+
+    #### Weight updates set-up ####
+    # gradient
+    weight_grad = grads.CoeffGrad(psf_stack, comp, VT, flux_est, sig_est, 
+                                  shift_ker_stack, shift_ker_stack_adj, upfact)
+    
+    # cost function
+    weight_cost = costObj([weight_grad], tolerance=1e-6) #TODO: this hardcoded tolerance. It must go.
+    
+    # k-thresholding for spatial constraint
+    iter_func = lambda x: np.floor(np.sqrt(x))+1
+    coeff_prox = rca_prox.KThreshold(iter_func)
 
     for k in range(0,nb_iter):
         " ============================== Sources estimation =============================== "
@@ -766,30 +780,30 @@ def rca_main_routine(psf_stack_in,field_pos,upfact,opt,nsig,
         id0 = where((survivors==1))
         id = id0[0]
 
+
         " ============================== Weights estimation =============================== "
-        n_max = nb_iter-1
-        if k < n_max:
-            weights_k = None
-            if lsq_en:
-                weights_k = non_unif_smoothing_mult_coeff_pos_cp_6(psf_stack,comp_lr,nb_iter=nb_subiter*2)
-            else:
-                weights_k,alph,supports = non_unif_smoothing_mult_coeff_pos_cp_5\
-                (psf_stack,comp_lr,comp,neigh,ker,alph[ind_select,:],\
-                to=to,nb_iter=nb_subiter*2,tol=0.1,Ainit=weights[ind_select,:],\
-                pos_en=positivity_en)
-            list_surv = list()
-            for l in range(0,comp.shape[2]):
-                #[MAS]: a is just a normalization so one of the two matrices is norm-normalized
-                a = sqrt((weights_k[l,:]**2).sum())
-                if a>0:
-                    list_surv.append(l)
-                    if wavr_en:
-                        comp[:,:,l] *= a
-                        weights_k[l,:] /= a
-            ind_select = tuple(list_surv)
+        if k < nb_iter-1: 
+            # update sources and reset iteration counter for K-thresholding
+            weight_grad.update_S(comp)
+            coeff_prox.reset_iter()
+            weight_optim = optimalg.ForwardBackward(alph, weight_grad, coeff_prox, cost=weight_cost,
+                                        beta_param=weight_grad.inv_spec_rad, auto_iterate=False)
+            weight_optim.iterate(max_iter=2.*nb_subiter)
+            alph = weight_optim.x_final
+            weights_k = alph.dot(VT)
+
+            # renormalize to break scale invariance
+            weight_norms = np.sqrt(np.sum(weights_k**2,axis=1)) 
+            comp *= weight_norms
+            weights_k /= weight_norms.reshape(-1,1)
+            #TODO: replace line below with Fred's component selection 
+            ind_select = range(weights.shape[0])
             weights = weights_k[ind_select,:]
             input_ref[0] = comp[:,:,ind_select]
             input_ref[4] = weights
+            supports = None #TODO
+
+
     for l in range(0,shap[2]):
         for p in range(0,comp.shape[2]):
             im_hr[:,:,l] = im_hr[:,:,l]+weights[p,l]*comp[:,:,p]
@@ -798,4 +812,4 @@ def rca_main_routine(psf_stack_in,field_pos,upfact,opt,nsig,
             ,upfact,av_en=0)
 
     return im_hr,comp,weights,res,sig_est*sig_min,flux_est,\
-           shifts,alph,alph_ref,e_opt,p_opt,ker,supports
+           shifts,alph,alph_ref,e_opt,p_opt,VT,supports
