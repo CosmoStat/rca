@@ -3,7 +3,7 @@ from modopt.opt.gradient import GradParent, GradBasic
 from modopt.math.matrix import PowerMethod
 import utils
 from scipy.signal import fftconvolve
-
+import psf_toolkit as tk
 
 def degradation_op(X, shift_ker, D):
     """ Shift and decimate fine-grid image."""
@@ -21,26 +21,28 @@ class CoeffGrad(GradParent, PowerMethod):
         self.obs_data = data
         self.op = self.MX 
         self.trans_op = self.MtX 
-        self.S = np.copy(S)
         self.VT = VT
         self.flux = flux
         self.sig = sig
         self.ker = ker
         self.ker_rot  = ker_rot
         self.D = D
-        # save number of (superresolved) pixels to flatten stacks of images
-        self.hr_npix = np.prod(np.array(data.shape[:2])*D)
         # initialize Power Method to compute spectral radius
         PowerMethod.__init__(self, self.trans_op_op, 
                         (S.shape[-1],VT.shape[0]), auto_run=False)
+        self.update_S(np.copy(S), update_spectral_radius=False)
         
         self._current_rec = None # stores latest application of self.MX
 
     def update_S(self, new_S, update_spectral_radius=True):
         self.S = new_S
+        # Apply degradation operator to components
+        normfacs = self.flux / (np.median(self.flux)*self.sig)
+        self.FdS = np.array([[nf * degradation_op(S_j,shift_ker,self.D) 
+                              for nf,shift_ker in zip(normfacs, utils.reg_format(self.ker))] 
+                              for S_j in tk.reg_format(self.S)])
         if update_spectral_radius:
             PowerMethod.get_spec_rad(self)
-        print ' > WEIGHT GRAD STEP:\t{}'.format(self.inv_spec_rad)
 
     def MX(self, alph):
         """Apply degradation operator and renormalize.
@@ -55,11 +57,11 @@ class CoeffGrad(GradParent, PowerMethod):
         np.ndarray result
 
         """
-        normfacs = self.flux / (np.median(self.flux)*self.sig)
         A = alph.dot(self.VT) 
-        dec_rec = np.array([nf * degradation_op(self.S.dot(A_i),shift_ker,self.D) for nf,A_i,shift_ker 
-                       in zip(normfacs, A.T, utils.reg_format(self.ker))])
-        self._current_rec = utils.rca_format(dec_rec)
+        dec_rec = np.empty(self.obs_data.shape)
+        for j in range(dec_rec.shape[-1]):
+            dec_rec[:,:,j] = np.sum(A[:,j].reshape(-1,1,1)*self.FdS[:,j],axis=0)
+        self._current_rec = dec_rec
         return self._current_rec
 
     def MtX(self, x):
@@ -77,13 +79,9 @@ class CoeffGrad(GradParent, PowerMethod):
         -------
         np.ndarray result
 
-        """
-        normfacs = self.flux / (np.median(self.flux)*self.sig)
-        x = utils.reg_format(x)
-        upsamp_x = np.array([nf * adjoint_degradation_op(x_i,shift_ker,self.D) for nf,x_i,shift_ker 
-                       in zip(normfacs, x, utils.reg_format(self.ker_rot))])
-        x, upsamp_x = utils.rca_format(x), utils.rca_format(upsamp_x)
-        STx = self.S.T.reshape(-1,self.hr_npix).dot(upsamp_x.reshape(self.hr_npix,-1))
+        """ 
+        x = tk.reg_format(x)
+        STx = np.array([np.sum(FdS_i*x, axis=(1,2)) for FdS_i in self.FdS])
         return STx.dot(self.VT.T) #aka... "V"
                 
     def cost(self, x, y=None, verbose=False):
