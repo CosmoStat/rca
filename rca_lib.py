@@ -734,7 +734,7 @@ def rca_main_routine(psf_stack_in,field_pos,upfact,opt,nsig,
                                   shift_ker_stack, shift_ker_stack_adj, upfact)
     
     # cost function
-    weight_cost = costObj([weight_grad], tolerance=1e-6) #TODO: this hardcoded tolerance. It must go.
+    weight_cost = costObj([weight_grad]) 
     
     # k-thresholding for spatial constraint
     iter_func = lambda x: np.floor(np.sqrt(x))+1
