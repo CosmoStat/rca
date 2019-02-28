@@ -256,3 +256,4 @@ class RCA(object):
         self.weights = weights
         self.S = comp
         self.alph = alph
+        self.current_rec = source_grad._current_rec
