@@ -35,12 +35,11 @@ class RCA(object):
         
     """
     def __init__(self, n_comp, upfact=1, ksig=4, n_scales=3,
-                 ksig_init=5, n_scales_init=2, dist_weight_deg=1):
+                 ksig_init=5, n_scales_init=2):
         self.n_comp = n_comp
         self.upfact = upfact
         self.ksig = ksig
         self.ksig_init = ksig_init
-        self.dist_weight_deg = dist_weight_deg
         
         # option strings for mr_transform
         self.opt_sig_init = ['-t2', '-n{}'.format(n_scales_init)]
@@ -109,8 +108,10 @@ class RCA(object):
         self.nb_subiter_weights = nb_subiter_weights
             
         self._initialize()
-        if self.VT is None or self.alpha is None: #TODO? If VT is provided but not alpha, only initialize latter
+        if self.VT is None or self.alph is None: #TODO? If VT is provided but not alpha, only initialize latter
             self._build_graphs()
+        else:
+            self.weights = self.alph.dot(self.VT)
         self._fit()
         return self.S, self.weights
         
@@ -143,18 +144,8 @@ class RCA(object):
         self.obs_data /= self.sigs.reshape(1,1,-1)
     
     def _build_graphs(self):
-        print "Contructing PSF tree..."
-        nb_neighs = self.shap[2]-1
-        neigh,dists = utils.knn_interf(self.obs_pos,nb_neighs)
-        print "Done..."
-        dists_unsorted = utils.feat_dist_mat(self.obs_pos)
-        dist_med = np.median(dists)
-        dist_weights = (dist_med/dists_unsorted)**self.dist_weight_deg
-        dist_weigths = dist_weights/dist_weights.max()
-        
         res = np.copy(self.obs_data)
-        #TODO? might be a problem here with the final 'weight' you use as initialization, you shuffled a bunch of stuff around
-        e_opt,p_opt,weights,comp_temp,data,self.VT,alph_ref = rca_lib.analysis(ufrk.rect_crop_c(res,
+        e_opt,p_opt,weights,self.VT,alph_ref = rca_lib.analysis(ufrk.rect_crop_c(res,
                       int(0.9*self.shap[0]),int(0.9*self.shap[1]),self.centroids),
                       0.1*np.prod(self.shap)*self.sig_min**2,self.obs_pos,nb_max=self.n_comp)                  
         self.alph = alph_ref
@@ -256,4 +247,9 @@ class RCA(object):
         self.weights = weights
         self.S = comp
         self.alph = alph
+        source_grad.MX(self.S)
         self.current_rec = source_grad._current_rec
+
+    def _transform(self, alpha):
+        weights = alph.dot(self.VT)
+        return self.S.dot(weights)

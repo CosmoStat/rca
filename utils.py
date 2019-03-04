@@ -262,9 +262,9 @@ def thresholding_3D(x,thresh,thresh_type):
 
     return xthresh
 
-def kernel_ext(mat,tol = 0.01): 
+def kernel_ext(mat,tol = 0.01, n_eigenvects=None): 
     """ Computes input matrix's kernel, defined as the vector space spanned by the eigenvectors corresponding 
-    to 1% of the sum of the squared singular values.
+    to `tol`% of the sum of the squared singular values.
     
     #TODO: this is basically just the SVD, all lines between that and the ``return`` are useless.
     """
@@ -278,11 +278,13 @@ def kernel_ext(mat,tol = 0.01):
     count -=1
     #ker = Vt[-count:,:]
     ker = copy(Vt)
+    if n_eigenvects is not None:
+        ker = Vt[-hard_number_eigenvectors:]
 
     return ker
 
 def kernel_mat_test_unit(mat,mat_test,tol=0.01):
-    """**[???]**
+    """ Picks best eigenvector (i.e. solves (34) from RCA paper).
     
     Calls:
     
@@ -308,8 +310,8 @@ def kernel_mat_test_unit(mat,mat_test,tol=0.01):
     return loss,uout,ker,select_ind
 
 def kernel_mat_stack_test_unit(mat_stack,mat_test,tol=0):
-    """ Computes whatever graph constraint-related quantity :func:`utils.kernel_mat_test_unit` computes
-    for a set of matrices.
+    """ Pick best eigenvector for each of a set of (e,a) values to select
+    the best of these (i.e. solves (35) from RCA paper).
     
     Calls:
     

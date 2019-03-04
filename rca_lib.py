@@ -136,6 +136,8 @@ def pow_meth(opname,op_param,siz,tol=0.5,ainit=None,nb_iter_max=30,opt_vect=None
     return a,L
 
 def non_uniform_smoothing_bas_mat(weights):
+    """ Computes base matrices from inverse distances, used to compute $P_{e,a}$.
+    """
     shap = weights.shape
     A = zeros((shap[0],shap[0]))
     B = zeros((shap[0],shap[0]))
@@ -147,12 +149,24 @@ def non_uniform_smoothing_bas_mat(weights):
     return A,B
 
 def non_uniform_smoothing_mat_2(weights,e): # e>=0
+    """ Computes $P_{e_a}$.
+    
+    Calls:
+    
+    * :func:`optim_utils.non_uniform_smoothing_bas_mat`
+    """
     A,B = non_uniform_smoothing_bas_mat(weights)
     mat_out = A.dot(transpose(A))+ e*(A.dot(B)+ B.dot(transpose(A))) + (e**2)*B.dot(B) # B is diagonal matrix
     return mat_out
 
 def non_uniform_smoothing_mat_dist_1(dist,expo_range,e):
-    dist_med = median(dist)
+    """ Computes set of $P_{e,a}$ matrices for fixed ``e`` and varying ``expo``
+    
+    Calls:
+    
+    * :func:`optim_utils.non_uniform_smoothing_mat_2`
+    """
+    dist_med = np.median(dist)
     nb_samp = len(expo_range)
     nb_im = dist.shape[0]
     mat_stack = zeros((nb_im,nb_im,nb_samp))
@@ -163,7 +177,15 @@ def non_uniform_smoothing_mat_dist_1(dist,expo_range,e):
     return mat_stack
 
 def non_uniform_smoothing_mat_dist_2(dist,expo,e_range):
-    dist_med = median(dist)
+    """ Same as :func:`optim_utils.non_uniform_smoothing_mat_dist_1`, but with
+    constant ``expo`` and varying ``e`` (as opposed to constant ``e`` and 
+    varying ``expo``.
+    
+    Calls:
+    
+    * :func:`optim_utils.non_uniform_smoothing_mat_2`
+    """
+    dist_med = np.median(dist)
     nb_samp = len(e_range)
     nb_im = dist.shape[0]
     mat_stack = zeros((nb_im,nb_im,nb_samp))
@@ -174,6 +196,14 @@ def non_uniform_smoothing_mat_dist_2(dist,expo,e_range):
     return mat_stack
 
 def notch_filt_optim_2(test_mat,dist,expo_range,e_range,nb_iter=2,tol=0.01):
+    """ Finds best spatial constraint parameters for a given eigenPSF and associated graph.
+    
+    Calls:
+    
+    * :func:`optim_utils.non_uniform_smoothing_mat_dist_1`
+    * :func:`utils.kernel_mat_stack_test_unit`
+    * :func:`optim_utils.non_uniform_smoothing_mat_dist_2`
+    """
     expo_out = None
     e_out = 0.5
     loss = None
@@ -182,15 +212,16 @@ def notch_filt_optim_2(test_mat,dist,expo_range,e_range,nb_iter=2,tol=0.01):
     j2 = None
     for i in range(0,nb_iter):
         mat_stack = non_uniform_smoothing_mat_dist_1(dist,expo_range,e_out)
-        vect,j,loss,ker,j2 = utils_for_rca.kernel_mat_stack_test_unit(mat_stack,test_mat,tol=tol)
+        # "j" is across (e,a) values; "j2" is eigenvector numver for that j
+        vect,j,loss,ker,j2 = utils.kernel_mat_stack_test_unit(mat_stack,test_mat,tol=tol)
         expo_out = expo_range[j]
         mat_stack = non_uniform_smoothing_mat_dist_2(dist,expo_out,e_range)
-        vect,j,loss,ker,j2 = utils_for_rca.kernel_mat_stack_test_unit(mat_stack,test_mat,tol=tol)
+        vect,j,loss,ker,j2 = utils.kernel_mat_stack_test_unit(mat_stack,test_mat,tol=tol)
         e_out = e_range[j]
 
     return expo_out,e_out,loss,vect,ker,j2
 
-def analysis(cube,sig,field_dist,p_min = 0.01,e_min=0.01,e_max=1.99,nb_max=30,tol=0.01):
+def analysis(cube,sig,field_dist,p_min = 0.01,e_min=0.01,e_max=1.99,nb_max=30,tol=0.01,n_eigenvects=None):
     """Computes graph-constraint related values, see RCA paper sections 5.2 and (especially) 5.5.3.
     
     
@@ -235,29 +266,22 @@ def analysis(cube,sig,field_dist,p_min = 0.01,e_min=0.01,e_max=1.99,nb_max=30,to
         print "nb_comp: ",nb_iter," residual: ",loss," e: ",e_out," p: ",expo_out,"chosen index: ",j,"/",shap[2]
         err = sum(res_mat**2)
 
-    e_vect = zeros((nb_iter,))
-    p_vect = zeros((nb_iter,))
-    weights = zeros((nb_iter,shap[2]))
-    ker = zeros((nb_iter*shap[2],shap[2]))
-    ind = zeros((nb_iter,nb_iter*shap[2]))
-    for i in range(0,nb_iter):
-        e_vect[i] = list_e[i]
-        p_vect[i] = list_p[i]
-        weights[i,:] = list_comp[i].reshape((shap[2],))
-        ker[i*shap[2]:(i+1)*shap[2],:] = list_ker[i]
-        ind[i,i*shap[2]+list_ind[i]] = 1
-
-
-    res_mat = copy(transpose(cube.reshape((shap[0]*shap[1],shap[2]))))
-    proj_coeff = weights.dot(res_mat)
-    comp = utils.mat_to_cube(proj_coeff,shap[0],shap[1])
-
-    proj_data = transpose(weights).dot(proj_coeff)
-    proj_data = utils.mat_to_cube(proj_data,shap[0],shap[1])
-
-    return e_vect,p_vect,weights,comp,proj_data,ker,ind
+    e_vect = np.array(list_e)
+    p_vect = np.array(list_p)
+    ker = np.vstack((keri for keri in list_ker))
+    alpha = np.zeros((nb_iter, ker.shape[0]))
+    if n_eigenvects is None:
+        n_eigenvects = shap[2]
+    for i in range(nb_iter):
+        alpha[i,i*n_eigenvects+list_ind[i]] = 1
+    weights = alpha.dot(ker)
+    return e_vect,p_vect,weights,ker,alpha
 
 def pow_law_select(dist_weights,nb_neigh,min_val=10**(-15)):
+    """ Select maximum value of $e$ for the greedy search over set of
+    $(e,a)$ couples, so that the graph is still fully connected.
+    """
+
     a = dist_weights[:,0]/dist_weights[:,nb_neigh-1]
     r_med = a.min()
     p = log(min_val)/log(r_med)
@@ -686,7 +710,7 @@ def rca_main_routine(psf_stack_in,field_pos,upfact,opt,nsig,
                 weights[l,:] /= a
     else:
         if shifts_regist:
-            e_opt,p_opt,weights,comp_temp,data,VT,alph_ref  = analysis(ufrk.rect_crop_c(res,int(0.9*shap[0])\
+            e_opt,p_opt,weights,VT,alph_ref  = analysis(ufrk.rect_crop_c(res,int(0.9*shap[0])\
             ,int(0.9*shap[1]),centroids),0.1*prod(shap)*sig_min**2,field_pos,nb_max=nb_comp_max)
         else:
             e_opt,p_opt,weights,comp_temp,data,VT,alph_ref  = analysis(res,int(0.9*shap[0])*int(0.9*shap[1])*sig_min**2,\
