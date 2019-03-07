@@ -32,10 +32,13 @@ class RCA(object):
         Similar to `n_scales', for use when estimating shifts and noise levels, as it might 
         be sufficient to use fewer scales when initializing. Unused if `sigs' are provided
         when running `RCA.fit'. Default is 2.
+    verbose: bool or int
+        If True, will only output RCA-specific lines to stdout. #TODO: If verbose is set to 2,
+        will run ModOpt's optimization algorithms in verbose mode. 
         
     """
     def __init__(self, n_comp, upfact=1, ksig=4, n_scales=3,
-                 ksig_init=5, n_scales_init=2):
+                 ksig_init=5, n_scales_init=2, verbose=True):
         self.n_comp = n_comp
         self.upfact = upfact
         self.ksig = ksig
@@ -44,6 +47,7 @@ class RCA(object):
         # option strings for mr_transform
         self.opt_sig_init = ['-t2', '-n{}'.format(n_scales_init)]
         self.opt = ['-t2', '-n{}'.format(n_scales)]
+        self.verbose = verbose
         
     def fit(self, obs_data, obs_pos, S=None, VT=None, alph=None,
             shifts=None, centroids=None, sigs=None, flux=None,
@@ -107,9 +111,17 @@ class RCA(object):
             nb_subiter_weights = 2*nb_subiter_S
         self.nb_subiter_weights = nb_subiter_weights
             
+        if self.verbose:
+            print 'Running basic initialization tasks...'
         self._initialize()
-        if self.VT is None or self.alph is None: #TODO? If VT is provided but not alpha, only initialize latter
+        if self.verbose:
+            print '... Done.'
+        if self.VT is None or self.alph is None:
+            if self.verbose:
+                print 'Constructing graph constraint...'
             self._build_graphs()
+            if self.verbose:
+                print '... Done.'
         else:
             self.weights = self.alph.dot(self.VT)
         self._fit()
@@ -144,10 +156,9 @@ class RCA(object):
         self.obs_data /= self.sigs.reshape(1,1,-1)
     
     def _build_graphs(self):
-        res = np.copy(self.obs_data)
-        e_opt,p_opt,weights,self.VT,alph_ref = rca_lib.analysis(ufrk.rect_crop_c(res,
-                      int(0.9*self.shap[0]),int(0.9*self.shap[1]),self.centroids),
-                      0.1*np.prod(self.shap)*self.sig_min**2,self.obs_pos,nb_max=self.n_comp)                  
+        res = np.copy(self.obs_data) 
+        e_opt,p_opt,weights,self.VT,alph_ref = rca_lib.analysis(res,
+                      0.1*np.prod(self.shap)*self.sig_min**2,self.obs_pos,nb_max=self.n_comp)             
         self.alph = alph_ref
         self.weights = weights
         

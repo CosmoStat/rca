@@ -279,7 +279,7 @@ def kernel_ext(mat,tol = 0.01, n_eigenvects=None):
     #ker = Vt[-count:,:]
     ker = copy(Vt)
     if n_eigenvects is not None:
-        ker = Vt[-hard_number_eigenvectors:]
+        ker = Vt[-n_eigenvects:]
 
     return ker
 

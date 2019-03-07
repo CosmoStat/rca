@@ -212,7 +212,7 @@ def notch_filt_optim_2(test_mat,dist,expo_range,e_range,nb_iter=2,tol=0.01):
     j2 = None
     for i in range(0,nb_iter):
         mat_stack = non_uniform_smoothing_mat_dist_1(dist,expo_range,e_out)
-        # "j" is across (e,a) values; "j2" is eigenvector numver for that j
+        # "j" is across (e,a) values; "j2" is eigenvector number for that j
         vect,j,loss,ker,j2 = utils.kernel_mat_stack_test_unit(mat_stack,test_mat,tol=tol)
         expo_out = expo_range[j]
         mat_stack = non_uniform_smoothing_mat_dist_2(dist,expo_out,e_range)
@@ -239,9 +239,7 @@ def analysis(cube,sig,field_dist,p_min = 0.01,e_min=0.01,e_max=1.99,nb_max=30,to
     nb_neighs = shap[2]-1
     neigh,dists = utils.knn_interf(field_dist,nb_neighs)
     p_max = pow_law_select(dists,nb_neighs)
-    print "power max = ",p_max
-
-    print "Done..."
+    print " > power max = ",p_max
     dists_unsorted = utils.feat_dist_mat(field_dist)
     e_range = utils.log_sampling(e_min,e_max,nb_samp_opt)
     p_range = utils.log_sampling(p_min,p_max,nb_samp_opt)
@@ -263,7 +261,7 @@ def analysis(cube,sig,field_dist,p_min = 0.01,e_min=0.01,e_max=1.99,nb_max=30,to
         list_ker.append(ker)
         nb_iter+=1
         res_mat = res_mat-transpose(vect).dot(vect.dot(res_mat))
-        print "nb_comp: ",nb_iter," residual: ",loss," e: ",e_out," p: ",expo_out,"chosen index: ",j,"/",shap[2]
+        print " > nb_comp: ",nb_iter," residual: ",loss," e: ",e_out," p: ",expo_out,"chosen index: ",j,"/",shap[2]
         err = sum(res_mat**2)
 
     e_vect = np.array(list_e)
