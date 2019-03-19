@@ -111,6 +111,13 @@ def feat_dist_mat(feat_mat):
         for k in range(0,shap[0]-1):
             mat_out[i,k] = sqrt(sum((feat_mat[i,:]-feat_mat[ind_i[0][k],:])**2))
     return mat_out
+    
+def pairwise_distances(obs_pos):
+    """Computes pairwise distances."""
+    ones = np.ones(obs_pos.shape[0])
+    out0 = np.outer(obs_pos[:,0], ones)
+    out1 = np.outer(obs_pos[:,1], ones)
+    return np.sqrt((out0 - out0.T)**2 + (out1 - out1.T)**2)
 
 def transpose_decim(im,decim_fact,av_en=0):
     """ Applies the transpose of the decimation matrix."""
@@ -646,3 +653,183 @@ def rand_file_name(ext):
     #TODO: get rid of it."""
     current_time = datetime.datetime.now().time()
     return 'file'+str(time.clock())+ext
+    
+    
+        
+def gen_Pea(distances, e, a):
+    """ Computes $P_{e,a}$ matrix for given e,a couple. See Equations (16-17)
+    in RCA paper.
+    
+    Parameters
+    ----------
+    distances: np.ndarray
+    Array of pairwise distances
+    
+    e: float
+    Exponent to which the pairwise distances should be raised.
+    
+    a: float
+    Constant multiplier along Laplacian's diagonal.
+    """
+    
+    Pea = np.copy(distances**e)
+    np.fill_diagonal(Pea, 1.)
+    Pea = -1./Pea**e
+    for i in range(Pea.shape[0]):
+        Pea[i,i] = a*(np.sum(-1.*Pea[i]) - 1.)
+    return Pea
+    
+def select_vstar(eigenvects, R):
+    """  Pick best eigenvector from a set of (e,a), i.e., solve (35) from RCA paper.
+    
+    Parameters
+    ----------
+    eigenvects: np.ndarray
+    Array of eigenvects to be tested over.
+    
+    R: np.ndarray
+    R_i matrix.
+    """
+    loss = np.sum(R**2)
+    for i,Pea_eigenvects in enumerate(eigenvects):
+        for j,vect in enumerate(Pea_eigenvects):
+            colvect = np.copy(vect).reshape(1,-1)
+            current_loss = np.sum((R - colvect.T.dot(colvect.dot(R)))**2)
+            if current_loss < loss:
+                loss = current_loss
+                eigen_idx = j
+                ea_idx = i
+                best_VT = np.copy(Pea_eigenvects)
+    return ea_idx, eigen_idx, best_VT
+    
+class GraphBuilder(object):
+    """ GraphBuilder.
+    
+    This class computes the necessary quantities for RCA's graph constraint.
+    
+    Parameters
+    ----------
+    obs_data: np.ndarray
+        Observed data.
+    obs_pos: np.ndarray
+        Corresponding positions.
+    n_comp: int
+        Number of RCA components.
+    n_eigenvects: int
+        Maximum number of eigenvectors to consider per $(e,a)$ couple. Default is None;
+        if not provided, _all_ eigenvectors will be considered, which can lead to a poor
+        selection of graphs, especially when data is undersampled.
+    n_iter: int
+        How many alternations should there be when optimizing over e and a. Default is 3.
+    ea_gridsize: int
+        How fine should the logscale grid of (e,a) values be. Default is 10.
+    distances: np.ndarray
+        Pairwise distances for all positions. Default is None; if not provided, will be
+        computed from given positions.
+    auto_run: bool
+        Whether to immediately build the graph quyantities. Default is True.
+    """
+    def __init__(self, obs_data, obs_pos, n_comp, n_eigenvects=None, n_iter=3,
+                 ea_gridsize=10, distances=None, auto_run=True, verbose=True):
+        self.obs_data = obs_data
+        self.obs_pos = obs_pos
+        self.n_comp = n_comp
+        if n_eigenvects is None:
+            self.n_eigenvects = self.obs_data.shape[2]
+        else:
+            self.n_eigenvects = n_eigenvects
+        self.n_iter = n_iter
+        self.ea_gridsize = ea_gridsize
+        self.verbose = verbose
+        
+        if distances is None:
+            self.distances = pairwise_distances(self.obs_pos)
+        else:
+            self.distances = distances
+        if auto_run:
+            self._build_graphs()
+        
+    def _build_graphs(self):
+        """Computes graph-constraint related values, see RCA paper sections 5.2 and (especially) 5.5.3.
+            
+        """
+        shap = self.obs_data.shape
+        e_max = self.pick_emax()
+        if self.verbose:
+            print " > power max = ",e_max
+        a_range = np.geomspace(0.01, 1.99, self.ea_gridsize)
+        e_range = np.geomspace(0.01, e_max, self.ea_gridsize)
+        # initialize R matrix with observations
+        R = np.copy(np.transpose(self.obs_data.reshape((shap[0]*shap[1],shap[2]))))
+
+        self.sel_a = []
+        self.sel_e = []
+        idx = []
+        list_eigenvects = []
+        for _ in range(self.n_comp): 
+            e, a, j, best_VT = self.select_params(R, e_range, a_range)
+            self.sel_e += [e]
+            self.sel_a += [a]
+            idx += [j]
+            list_eigenvects += [best_VT]
+            vect = best_VT[j].reshape(1,-1)
+            R -= vect.T.dot(vect.dot(R))
+            if self.verbose:
+                print " > selected e: {}\tselected a: {}\t chosen index: {}/{}".format(
+                                                             e, a, j, self.n_eigenvects)
+        self.VT = np.vstack((eigenvect for eigenvect in list_eigenvects))
+        self.alpha = np.zeros((self.n_comp, self.VT.shape[0]))
+        for i in range(self.n_comp):
+            self.alpha[i, i*self.n_eigenvects+idx[i]] = 1
+        
+    def pick_emax(self, epsilon=1e-15):
+        """ Select maximum value of $e$ for the greedy search over set of
+        $(e,a)$ couples, so that the graph is still fully connected.
+        """
+        nodiag = np.copy(self.distances)
+        nodiag[nodiag==0] = 1e20
+        dist_ratios = np.min(nodiag,axis=1) / np.max(self.distances, axis=1)
+        r_med = np.min(dist_ratios**2)
+        return np.log(epsilon)/np.log(r_med)
+        
+    def select_params(self, R, e_range, a_range):
+        """ Selects (e,a) parameters and best eigenvector for current $R_i$ matrix.
+        
+        Parameters
+        ----------
+        R: np.ndarray
+            Current $R_i$ matrix (as defined in sect. 5.5.3.)
+        e_range: np.ndarray
+            List of e values to be tested.
+        a_range: np.ndarray
+            List of a values to be tested.
+        """
+        current_a = 0.5
+        for i in range(self.n_iter):
+            # optimize over e
+            Peas = np.array([gen_Pea(self.distances, e, current_a) 
+                                                   for e in e_range])
+            all_eigenvects = np.array([self.gen_eigenvects(Pea) for Pea in Peas])
+            ea_idx, eigen_idx, _ = select_vstar(all_eigenvects, R)
+            current_e = e_range[ea_idx]
+            
+            # optimize over a
+            Peas = np.array([gen_Pea(self.distances, current_e, a) 
+                                                   for a in a_range])
+            all_eigenvects = np.array([self.gen_eigenvects(Pea) for Pea in Peas])
+            ea_idx, eigen_idx, best_VT = select_vstar(all_eigenvects, R)
+            current_a = a_range[ea_idx]
+
+        return current_e, current_a, eigen_idx, best_VT
+        
+    def gen_eigenvects(self, mat): 
+        """ Computes input matrix's eigenvectors and keep the `n_eigenvects` associated with
+        the smallest eigenvalues.
+        """
+        U, s, vT = np.linalg.svd(mat,full_matrices=True)
+        vT = vT[-self.n_eigenvects:]
+        return vT
+        
+        
+
+
