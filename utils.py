@@ -13,6 +13,34 @@ from scipy import interpolate
 
 import scipy.linalg as sci_lin
 
+def acc_sig_maps(shap_im,ker_stack,sig_est,flux_est,flux_ref,upfact,w,sig_data=None):
+    shap = w.shape
+    map_out = zeros((shap_im[0]*upfact,shap_im[1]*upfact,shap[0]))
+    for i in range(0,shap[0]):
+        map_out[:,:,i] = acc_sig_map(shap_im,ker_stack,sig_est,flux_est,flux_ref,\
+        upfact,w[i,:],sig_data=sig_data)
+    return map_out
+    
+def acc_sig_map(shap_im,ker_stack,sig_est,flux_est,flux_ref,upfact,w,sig_data=None):
+    """ Computes the square root of $\mathcal{F}^{2*}(\hat\sigma^2)(A^\top\odot A^\top)$
+    See equation (27) in RCA paper.
+    Note $\mathrm{Var}(B)$ has been replaced by the noise level as estimated from the data,
+    and here we do not have the term $\mu$ (gradient step size in the paper).
+    """
+    shap = ker_stack.shape
+    nb_im = shap[2]
+    if sig_data is None:
+        sig_data = ones((nb_im,))
+    var_stack = ones((shap_im[0],shap_im[1],nb_im))
+    map2 = zeros((shap_im[0]*upfact,shap_im[1]*upfact))
+    ker_stack_in = copy(ker_stack)**2
+    for l in range(0,shap[2]):
+        var_stack[:,:,l]*=sig_data[l]**2
+        map2 += ((w[l]*flux_est[l]/(sig_est[l]*flux_ref))**2)*scisig.convolve(\
+        transpose_decim(var_stack[:,:,l],upfact),ker_stack_in[:,:,l],mode='same')
+    map =  sqrt(map2)
+    return map
+
 def rca_format(cube):
     """ Switch from "regular" format to "RCA" format (ie. image index is contained
     on last/2nd axis)"""

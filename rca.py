@@ -7,8 +7,6 @@ from modopt.opt.proximity import Positivity
 import modopt.opt.algorithms as optimalg
 import proxs as rca_prox
 import grads
-import utils_for_rca as ufrk #TODO: move remaining "ufrk" stuff to utils at least
-import rca_lib
 
 class RCA(object):
     """ Resolved Components Analysis.
@@ -219,7 +217,7 @@ class RCA(object):
             sigma = 1./lin_recombine.norm * beta/2
 
             # ... update sparsity prox thresholds...
-            thresh = utils.reg_format(ufrk.acc_sig_maps(self.shap,self.shift_ker_stack_adj,self.sigs,
+            thresh = utils.reg_format(utils.acc_sig_maps(self.shap,self.shift_ker_stack_adj,self.sigs,
                                                         self.flux,self.flux_ref,self.upfact,weights,
                                                         sig_data=np.ones((self.shap[2],))*self.sig_min))
             thresholds = self.ksig*np.sqrt(np.array([filter_convolve(Sigma_k**2,self.starlet_filters**2) 
