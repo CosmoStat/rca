@@ -49,9 +49,10 @@ class RCA(object):
         self.opt = ['-t2', '-n{}'.format(n_scales)]
         self.verbose = verbose
         
-    def fit(self, obs_data, obs_pos, S=None, VT=None, alph=None,
+    def fit(self, obs_data, obs_pos, S=None, VT=None, alpha=None,
             shifts=None, centroids=None, sigs=None, flux=None,
-            nb_iter=2, nb_subiter_S=300, nb_subiter_weights=None):
+            nb_iter=2, nb_subiter_S=300, nb_subiter_weights=None,
+            n_eigenvects=None, graph_kwargs={}):
         """ Fits RCA to observed star field.
         
         Parameters
@@ -64,8 +65,8 @@ class RCA(object):
             First guess (or warm start) eigenPSFs. Default is None.
         VT: np.ndarray
             Matrix of concatenated graph Laplacians. Default is None.
-        alph: np.ndarray
-            First guess (or warm start) weights. Default is None.
+        alpha: np.ndarray
+            First guess (or warm start) weights, after factorization by VT. Default is None.
         shifts: np.ndarray
             Corresponding sub-pixel shifts. Default is None; will be estimated from
             observed data if not provided.
@@ -89,6 +90,13 @@ class RCA(object):
             Maximum number of iterations for alpha updates. If ModOpt's optimizers achieve 
             internal convergence, that number may (and often is) not reached. Default is None;
             if not provided, will be set to `2*nb_subiter_S` (as it was in RCA v1). 
+        n_eigenvects: int
+            Maximum number of eigenvectors to consider per $(e,a)$ couple. Default is None;
+            if not provided, _all_ eigenvectors will be considered, which can lead to a poor
+            selection of graphs, especially when data is undersampled. Ignored if VT and
+            alpha are provided.
+        graph_kwargs: dictionary
+            List of optional kwargs to be passed on to the `func:utils.GraphBuilder`.
         """
         
         self.obs_data = np.copy(obs_data)
@@ -100,7 +108,7 @@ class RCA(object):
         else:
             self.S = S
         self.VT = VT
-        self.alph = alph
+        self.alpha = alpha
         self.shifts = shifts
         self.centroids = centroids #TODO: compute them from shifts
         self.sigs = sigs
@@ -110,20 +118,22 @@ class RCA(object):
         if nb_subiter_weights is None:
             nb_subiter_weights = 2*nb_subiter_S
         self.nb_subiter_weights = nb_subiter_weights
+        self.n_eigenvects = n_eigenvects
+        self.graph_kwargs = graph_kwargs
             
         if self.verbose:
             print 'Running basic initialization tasks...'
         self._initialize()
         if self.verbose:
             print '... Done.'
-        if self.VT is None or self.alph is None:
+        if self.VT is None or self.alpha is None:
             if self.verbose:
                 print 'Constructing graph constraint...'
-            self._build_graphs()
+            self._initialize_graph_constraint()
             if self.verbose:
                 print '... Done.'
         else:
-            self.weights = self.alph.dot(self.VT)
+            self.weights = self.alpha.dot(self.VT)
         self._fit()
         return self.S, self.weights
         
@@ -155,17 +165,17 @@ class RCA(object):
         self.sigs /= self.sig_min
         self.obs_data /= self.sigs.reshape(1,1,-1)
     
-    def _build_graphs(self):
-        res = np.copy(self.obs_data) 
-        e_opt,p_opt,weights,self.VT,alph_ref = rca_lib.analysis(res,
-                      0.1*np.prod(self.shap)*self.sig_min**2,self.obs_pos,nb_max=self.n_comp)             
-        self.alph = alph_ref
-        self.weights = weights
+    def _initialize_graph_constraint(self):
+        gber = utils.GraphBuilder(self.obs_data, self.obs_pos, self.n_comp, 
+                                  n_eigenvects=self.n_eigenvects, **self.graph_kwargs)
+        self.VT, self.alpha, self.distances = gber.VT, gber.alpha, gber.distances
+        self.sel_e, self.sel_a = gber.sel_e, gber.sel_a
+        self.weights = self.alpha.dot(self.VT)
         
     def _fit(self):
         weights = self.weights
         comp = self.S
-        alph = self.alph
+        alpha = self.alpha
         #### Source updates set-up ####
         # initialize dual variable and compute Starlet filters for Condat source updates 
         dual_var = np.zeros((self.im_hr_shape))
@@ -240,11 +250,11 @@ class RCA(object):
                 # update sources and reset iteration counter for K-thresholding
                 weight_grad.update_S(comp)
                 coeff_prox.reset_iter()
-                weight_optim = optimalg.ForwardBackward(alph, weight_grad, coeff_prox, cost=weight_cost,
+                weight_optim = optimalg.ForwardBackward(alpha, weight_grad, coeff_prox, cost=weight_cost,
                                                 beta_param=weight_grad.inv_spec_rad, auto_iterate=False)
                 weight_optim.iterate(max_iter=self.nb_subiter_weights)
-                alph = weight_optim.x_final
-                weights_k = alph.dot(self.VT)
+                alpha = weight_optim.x_final
+                weights_k = alpha.dot(self.VT)
 
                 # renormalize to break scale invariance
                 weight_norms = np.sqrt(np.sum(weights_k**2,axis=1)) 
@@ -257,10 +267,10 @@ class RCA(object):
     
         self.weights = weights
         self.S = comp
-        self.alph = alph
+        self.alpha = alpha
         source_grad.MX(self.S)
         self.current_rec = source_grad._current_rec
 
     def _transform(self, alpha):
-        weights = alph.dot(self.VT)
+        weights = alpha.dot(self.VT)
         return self.S.dot(weights)
