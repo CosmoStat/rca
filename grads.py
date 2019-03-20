@@ -40,7 +40,7 @@ class CoeffGrad(GradParent, PowerMethod):
         normfacs = self.flux / (np.median(self.flux)*self.sig)
         self.FdS = np.array([[nf * degradation_op(S_j,shift_ker,self.D) 
                               for nf,shift_ker in zip(normfacs, utils.reg_format(self.ker))] 
-                              for S_j in tk.reg_format(self.S)])
+                              for S_j in utils.reg_format(self.S)])
         if update_spectral_radius:
             PowerMethod.get_spec_rad(self)
 
@@ -80,7 +80,7 @@ class CoeffGrad(GradParent, PowerMethod):
         np.ndarray result
 
         """ 
-        x = tk.reg_format(x)
+        x = utils.reg_format(x)
         STx = np.array([np.sum(FdS_i*x, axis=(1,2)) for FdS_i in self.FdS])
         return STx.dot(self.VT.T) #aka... "V"
                 
