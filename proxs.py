@@ -101,6 +101,10 @@ class StarletThreshold(object):
         self.threshold = new_threshold
         if new_thresh_type in ['soft', 'hard']:
             self._thresh_type = new_thresh_type
+            
+    def starlet_transform(self, data):
+        data = reg_format(np.copy(data))
+        return np.array([filter_convolve(im, self._filters) for im in data])
 
     def op(self, data, **kwargs):
         """Operator
@@ -115,12 +119,11 @@ class StarletThreshold(object):
         np.ndarray thresholded and recomposed data
 
         """
-        data = reg_format(data)
-        transf_data = np.array([filter_convolve(im, self._filters) for im in data])
+        transf_data = self.starlet_transform(data)
         # Threshold all scales but the coarse
         transf_data[:,:-1] = SoftThresholding(transf_data[:,:-1], self.threshold[:,:-1])
         thresh_data = np.sum(transf_data, axis=1)
-        data, thresh_data = rca_format(data), rca_format(thresh_data)
+        thresh_data = rca_format(thresh_data)
         return thresh_data
 
     def cost(self, x, y):

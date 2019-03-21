@@ -7,6 +7,7 @@ from modopt.opt.proximity import Positivity
 import modopt.opt.algorithms as optimalg
 import proxs as rca_prox
 import grads
+from modopt.opt.reweight import cwbReweight
 
 class RCA(object):
     """ Resolved Components Analysis.
@@ -49,8 +50,8 @@ class RCA(object):
         
     def fit(self, obs_data, obs_pos, S=None, VT=None, alpha=None,
             shifts=None, centroids=None, sigs=None, flux=None,
-            nb_iter=2, nb_subiter_S=300, nb_subiter_weights=None,
-            n_eigenvects=None, graph_kwargs={}):
+            nb_iter=2, nb_subiter_S=300, nb_reweight=0, 
+            nb_subiter_weights=None, n_eigenvects=None, graph_kwargs={}):
         """ Fits RCA to observed star field.
         
         Parameters
@@ -84,6 +85,9 @@ class RCA(object):
             Maximum number of iterations for S updates. If ModOpt's optimizers achieve 
             internal convergence, that number may (and often is) not reached. Default is
             300.
+        nb_reweight: int 
+            Number of reweightings to apply during S updates. See equation (33) in RCA paper. 
+            Default is 0.
         nb_subiter_weights: int
             Maximum number of iterations for alpha updates. If ModOpt's optimizers achieve 
             internal convergence, that number may (and often is) not reached. Default is None;
@@ -116,6 +120,7 @@ class RCA(object):
         if nb_subiter_weights is None:
             nb_subiter_weights = 2*nb_subiter_S
         self.nb_subiter_weights = nb_subiter_weights
+        self.nb_reweight = nb_reweight
         self.n_eigenvects = n_eigenvects
         self.graph_kwargs = graph_kwargs
             
@@ -226,10 +231,21 @@ class RCA(object):
             sparsity_prox.update_threshold(tau*thresholds)
             
             # and run source update:
-            source_optim = optimalg.Condat(comp, dual_var, source_grad, sparsity_prox,
-                                           Positivity(), linear = lin_recombine,
-                                           max_iter=self.nb_subiter_S, tau=tau, sigma=sigma)
-            comp = source_optim.x_final
+            if self.nb_reweight:
+                reweighter = cwbReweight(thresholds)
+                for _ in range(self.nb_reweight):
+                    source_optim = optimalg.Condat(comp, dual_var, source_grad, sparsity_prox,
+                                                   Positivity(), linear = lin_recombine,
+                                                   max_iter=self.nb_subiter_S, tau=tau, sigma=sigma)
+                    comp = source_optim.x_final
+                    transf_data = sparsity_prox.starlet_transform(comp)
+                    reweighter.reweight(transf_data)
+                    thresholds = reweighter.weights 
+            else:
+                source_optim = optimalg.Condat(comp, dual_var, source_grad, sparsity_prox,
+                                               Positivity(), linear = lin_recombine,
+                                               max_iter=self.nb_subiter_S, tau=tau, sigma=sigma)
+                comp = source_optim.x_final
             
             #TODO: replace line below with Fred's component selection (to be extracted from `low_rank_global_src_est_comb`)
             ind_select = range(comp.shape[2])
