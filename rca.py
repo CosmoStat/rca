@@ -234,14 +234,6 @@ class RCA(object):
             #TODO: replace line below with Fred's component selection (to be extracted from `low_rank_global_src_est_comb`)
             ind_select = range(comp.shape[2])
 
-            comp_lr = np.zeros((self.shap[0],self.shap[1],comp.shape[2],self.shap[2]))
-            survivors = np.zeros((self.n_comp,))
-            for l in range(0,comp.shape[2]):
-                for p in range(0,self.shap[2]):
-                    comp_lr[:,:,l,p] = (self.flux[p]/(self.sigs[p]*self.flux_ref)*
-                                        utils.decim(fftconvolve(comp[:,:,l],self.shift_ker_stack[:,:,p],
-                                        mode='same'),self.upfact,av_en=0))
-
 
             " ============================== Weights estimation =============================== "
             if k < self.nb_iter-1: 
