@@ -8,6 +8,7 @@ import modopt.opt.algorithms as optimalg
 import proxs as rca_prox
 import grads
 from modopt.opt.reweight import cwbReweight
+from scipy.interpolate import Rbf
 
 class RCA(object):
     """ Resolved Components Analysis.
@@ -47,6 +48,7 @@ class RCA(object):
         self.opt_sig_init = ['-t2', '-n{}'.format(n_scales_init)]
         self.opt = ['-t2', '-n{}'.format(n_scales)]
         self.verbose = verbose
+        self.is_fitted = False
         
     def fit(self, obs_data, obs_pos, S=None, VT=None, alpha=None,
             shifts=None, centroids=None, sigs=None, flux=None,
@@ -138,7 +140,35 @@ class RCA(object):
         else:
             self.weights = self.alpha.dot(self.VT)
         self._fit()
+        self.is_fitted = True
         return self.S, self.weights
+        
+    def estimate_psf(self, test_pos, n_neighbors=15, rbf_function='thin_plate'):
+        """ Estimate and return PSF at desired positions.
+        
+        Parameters
+        ----------
+        test_pos: np.ndarray
+            Positions where the PSF should be estimated. Should be in the same format (units,
+            etc.) as the `obs_pos` fed to :func:RCA.fit`.
+        n_neighbors: int
+            Number of neighbors to use for RBF interpolation. Default is 15.
+        rbf_function: str
+            Type of RBF kernel to use. Default is 'thin_plate'.
+        """
+        if not self.is_fitted:
+            raise ValueError('RCA instance has not yet been fitted to observations. Please run\
+            the fit method.')
+        ntest = test_pos.shape[0]
+        test_weights = np.empty((self.n_comp, ntest))
+        for j,pos in enumerate(gal_pos):
+            # determine neighbors
+            nbs, pos_nbs = utils.return_neighbors(pos, self.obs_pos, self.weights.T, n_neighbors)
+            # train RBF and interpolate for each component
+            for i in range(n_components):
+                rbfi = Rbf(pos_nbs[:,0], pos_nbs[:,1], nbs[:,i], function=rbf_function)
+                test_weights[i,j] = rbfi(pos[0], pos[1])
+        return self._transform(test_weights)
         
     def _initialize(self):
         """ Initialization tasks related to noise levels, shifts and flux. Note it includes
@@ -277,6 +307,5 @@ class RCA(object):
         source_grad.MX(self.S)
         self.current_rec = source_grad._current_rec
 
-    def _transform(self, alpha):
-        weights = alpha.dot(self.VT)
+    def _transform(self, weights):
         return self.S.dot(weights)

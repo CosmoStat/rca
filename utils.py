@@ -32,8 +32,15 @@ def acc_sig_map(shap_im,ker_stack,sig_est,flux_est,flux_ref,upfact,w,sig_data=No
         var_stack[:,:,l]*=sig_data[l]**2
         map2 += ((w[l]*flux_est[l]/(sig_est[l]*flux_ref))**2)*scisig.convolve(\
         transpose_decim(var_stack[:,:,l],upfact),ker_stack_in[:,:,l],mode='same')
-    map =  np.sqrt(map2)
-    return map
+    sigmap =  np.sqrt(map2)
+    return sigmap
+    
+def return_neighbors(new_pos, obs_pos, vals, n_neighbors):
+    """ Find the `n_neighbors` nearest neighbors."""
+    distances = np.linalg.norm(obs_pos-new_pos, axis=1)
+    nbs = vals[np.argsort(distances)[:n_neighbors]]
+    pos = obs_pos[np.argsort(distances)[:n_neighbors]]
+    return nbs, pos
 
 def rca_format(cube):
     """ Switch from "regular" format to "RCA" format (ie. image index is contained
