@@ -161,11 +161,11 @@ class RCA(object):
             the fit method.')
         ntest = test_pos.shape[0]
         test_weights = np.empty((self.n_comp, ntest))
-        for j,pos in enumerate(gal_pos):
+        for j,pos in enumerate(test_pos):
             # determine neighbors
             nbs, pos_nbs = utils.return_neighbors(pos, self.obs_pos, self.weights.T, n_neighbors)
             # train RBF and interpolate for each component
-            for i in range(n_components):
+            for i in range(self.n_comp):
                 rbfi = Rbf(pos_nbs[:,0], pos_nbs[:,1], nbs[:,i], function=rbf_function)
                 test_weights[i,j] = rbfi(pos[0], pos[1])
         return self._transform(test_weights)
