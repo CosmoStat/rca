@@ -16,10 +16,10 @@ def acc_sig_maps(shap_im,ker_stack,sig_est,flux_est,flux_ref,upfact,w,sig_data=N
     return map_out
     
 def acc_sig_map(shap_im,ker_stack,sig_est,flux_est,flux_ref,upfact,w,sig_data=None):
-    """ Computes the square root of $\mathcal{F}^{2*}(\hat\sigma^2)(A^\top\odot A^\top)$
+    """ Computes the square root of :math:`\mathcal{F}^{2*}(\hat\sigma^2)(A^\\top\odot A^\\top)`.
     See equation (27) in RCA paper.
-    Note $\mathrm{Var}(B)$ has been replaced by the noise level as estimated from the data,
-    and here we do not have the term $\mu$ (gradient step size in the paper).
+    Note :math:`\mathrm{Var}(B)` has been replaced by the noise level as estimated from the data,
+    and here we do not have the term :math:`\mu` (gradient step size in the paper).
     """
     shap = ker_stack.shape
     nb_im = shap[2]
@@ -36,7 +36,7 @@ def acc_sig_map(shap_im,ker_stack,sig_est,flux_est,flux_ref,upfact,w,sig_data=No
     return sigmap
     
 def return_neighbors(new_pos, obs_pos, vals, n_neighbors):
-    """ Find the `n_neighbors` nearest neighbors."""
+    """ Find the ``n_neighbors`` nearest neighbors."""
     distances = np.linalg.norm(obs_pos-new_pos, axis=1)
     nbs = vals[np.argsort(distances)[:n_neighbors]]
     pos = obs_pos[np.argsort(distances)[:n_neighbors]]
@@ -185,7 +185,7 @@ def thresholding(x,thresh,thresh_type):
     return xthresh
 
 def kthresholding(x,k):
-    """ Applies k-thresholding (keep only k highest values, set rest to 0).
+    """ Applies k-thresholding (keep only ``k`` highest values, set rest to 0).
     """
     k = int(k)
     if k<1:
@@ -386,19 +386,19 @@ def rand_file_name(ext):
     return 'file'+str(time.clock())+ext
         
 def gen_Pea(distances, e, a):
-    """ Computes $P_{e,a}$ matrix for given e,a couple. See Equations (16-17)
+    """ Computes :math:`P_{e,a}` matrix for given ``e``, ``a`` couple. See Equations (16-17)
     in RCA paper.
     
     Parameters
     ----------
     distances: np.ndarray
-    Array of pairwise distances
+        Array of pairwise distances
     
     e: float
-    Exponent to which the pairwise distances should be raised.
+        Exponent to which the pairwise distances should be raised.
     
     a: float
-    Constant multiplier along Laplacian's diagonal.
+        Constant multiplier along Laplacian's diagonal.
     """
     
     Pea = np.copy(distances**e)
@@ -409,15 +409,15 @@ def gen_Pea(distances, e, a):
     return Pea
     
 def select_vstar(eigenvects, R):
-    """  Pick best eigenvector from a set of (e,a), i.e., solve (35) from RCA paper.
+    """  Pick best eigenvector from a set of :math:`(e,a)`, i.e., solve (35) from RCA paper.
     
     Parameters
     ----------
     eigenvects: np.ndarray
-    Array of eigenvects to be tested over.
+        Array of eigenvects to be tested over.
     
     R: np.ndarray
-    R_i matrix.
+        :math:`R_i` matrix.
     """
     loss = np.sum(R**2)
     for i,Pea_eigenvects in enumerate(eigenvects):
@@ -445,18 +445,19 @@ class GraphBuilder(object):
     n_comp: int
         Number of RCA components.
     n_eigenvects: int
-        Maximum number of eigenvectors to consider per $(e,a)$ couple. Default is None;
-        if not provided, _all_ eigenvectors will be considered, which can lead to a poor
-        selection of graphs, especially when data is undersampled.
+        Maximum number of eigenvectors to consider per :math:`(e,a)` couple. Default is ``None``;
+        if not provided, *all* eigenvectors will be considered, which can lead to a poor
+        selection of graphs, especially when data is undersampled. Ignored if ``VT`` and
+        ``alpha`` are provided.
     n_iter: int
-        How many alternations should there be when optimizing over e and a. Default is 3.
+        How many alternations should there be when optimizing over :math:`e` and :math:`a`. Default is 3.
     ea_gridsize: int
-        How fine should the logscale grid of (e,a) values be. Default is 10.
+        How fine should the logscale grid of :math:`(e,a)` values be. Default is 10.
     distances: np.ndarray
-        Pairwise distances for all positions. Default is None; if not provided, will be
+        Pairwise distances for all positions. Default is ``None``; if not provided, will be
         computed from given positions.
     auto_run: bool
-        Whether to immediately build the graph quyantities. Default is True.
+        Whether to immediately build the graph quantities. Default is ``True``.
     """
     def __init__(self, obs_data, obs_pos, n_comp, n_eigenvects=None, n_iter=3,
                  ea_gridsize=10, distances=None, auto_run=True, verbose=True):
@@ -512,8 +513,8 @@ class GraphBuilder(object):
             self.alpha[i, i*self.n_eigenvects+idx[i]] = 1
         
     def pick_emax(self, epsilon=1e-15):
-        """ Select maximum value of $e$ for the greedy search over set of
-        $(e,a)$ couples, so that the graph is still fully connected.
+        """ Select maximum value of :math:`e` for the greedy search over set of
+        :math:`(e,a)` couples, so that the graph is still fully connected.
         """
         nodiag = np.copy(self.distances)
         nodiag[nodiag==0] = 1e20
@@ -522,16 +523,16 @@ class GraphBuilder(object):
         return np.log(epsilon)/np.log(r_med)
         
     def select_params(self, R, e_range, a_range):
-        """ Selects (e,a) parameters and best eigenvector for current $R_i$ matrix.
+        """ Selects :math:`(e,a)` parameters and best eigenvector for current :math:`R_i` matrix.
         
         Parameters
         ----------
         R: np.ndarray
-            Current $R_i$ matrix (as defined in sect. 5.5.3.)
+            Current :math:`R_i` matrix (as defined in RCA paper, sect. 5.5.3.)
         e_range: np.ndarray
-            List of e values to be tested.
+            List of :math:`e` values to be tested.
         a_range: np.ndarray
-            List of a values to be tested.
+            List of :math:`a` values to be tested.
         """
         current_a = 0.5
         for i in range(self.n_iter):
@@ -552,7 +553,7 @@ class GraphBuilder(object):
         return current_e, current_a, eigen_idx, best_VT
         
     def gen_eigenvects(self, mat): 
-        """ Computes input matrix's eigenvectors and keep the `n_eigenvects` associated with
+        """ Computes input matrix's eigenvectors and keep the ``n_eigenvects`` associated with
         the smallest eigenvalues.
         """
         U, s, vT = np.linalg.svd(mat,full_matrices=True)

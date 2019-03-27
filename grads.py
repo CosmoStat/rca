@@ -16,6 +16,27 @@ def adjoint_degradation_op(x_i, shift_ker, D):
                        shift_ker,mode='same')
         
 class CoeffGrad(GradParent, PowerMethod):
+    """ Gradient class for the coefficient update.
+    
+    Parameters
+    ----------
+    data: np.ndarray
+        Observed data.
+    S: np.ndarray
+        Current eigenPSFs :math:`S`.
+    VT: np.ndarray
+        Matrix of concatenated graph Laplacians.
+    flux: np.ndarray
+        Per-object flux value.
+    sig: np.ndarray
+        Noise levels.
+    ker: np.ndarray
+        Shifting kernels.
+    ker_rot: np.ndarray
+        Inverted shifting kernels.
+    D: float
+        Upsampling factor.
+    """
     def __init__(self, data, S, VT, flux, sig, ker, ker_rot, D, data_type='float'):
         self._grad_data_type = data_type
         self.obs_data = data
@@ -35,6 +56,7 @@ class CoeffGrad(GradParent, PowerMethod):
         self._current_rec = None # stores latest application of self.MX
 
     def update_S(self, new_S, update_spectral_radius=True):
+        """ Update current eigenPSFs."""
         self.S = new_S
         # Apply degradation operator to components
         normfacs = self.flux / (np.median(self.flux)*self.sig)
@@ -44,20 +66,15 @@ class CoeffGrad(GradParent, PowerMethod):
         if update_spectral_radius:
             PowerMethod.get_spec_rad(self)
 
-    def MX(self, alph):
+    def MX(self, alpha):
         """Apply degradation operator and renormalize.
 
         Parameters
         ----------
-        S : np.ndarray
-            Input data array, a set of eigenPSFs
-
-        Returns
-        -------
-        np.ndarray result
-
+        alpha: np.ndarray
+            Current weights (after factorization by :math:`V^\\top`).
         """
-        A = alph.dot(self.VT) 
+        A = alpha.dot(self.VT) 
         dec_rec = np.empty(self.obs_data.shape)
         for j in range(dec_rec.shape[-1]):
             dec_rec[:,:,j] = np.sum(A[:,j].reshape(-1,1,1)*self.FdS[:,j],axis=0)
@@ -65,28 +82,20 @@ class CoeffGrad(GradParent, PowerMethod):
         return self._current_rec
 
     def MtX(self, x):
-        """MtX
-
-        This method calculates the action of the transpose of the matrix Mt on
-        the data X
+        """Adjoint to degradation operator :func:`MX`.
 
         Parameters
         ----------
         x : np.ndarray
-            Input data array, a cube of 2D images
-
-        Returns
-        -------
-        np.ndarray result
-
+            Set of finer-grid images.
         """ 
         x = utils.reg_format(x)
         STx = np.array([np.sum(FdS_i*x, axis=(1,2)) for FdS_i in self.FdS])
         return STx.dot(self.VT.T) #aka... "V"
                 
     def cost(self, x, y=None, verbose=False):
-        """ Compute data fidelity term. ``y`` is unused (it's just so ``modopt.opt.algorithms.Condat`` can feed
-        the dual variable.)
+        """ Compute data fidelity term. ``y`` is unused (it's just so ``modopt.opt.algorithms.Condat`` 
+        can feed the dual variable.)
         """
         if isinstance(self._current_rec, type(None)):
             self._current_rec = self.MX(x)
@@ -94,44 +103,31 @@ class CoeffGrad(GradParent, PowerMethod):
         return cost_val
                 
     def get_grad(self, x):
-        """Get the gradient step
-        This method calculates the gradient step from the input data
-        Parameters
-        ----------
-        x : np.ndarray
-            Input data array
-        Returns
-        -------
-        np.ndarray gradient value
-        Notes
-        -----
-        Calculates M^T (MX - Y)
+        """Compute current iteration's gradient.
         """
 
         self.grad = self.MtX(self.MX(x) - self.obs_data)
       
 
 class SourceGrad(GradParent, PowerMethod):
-    """Parameters
+    """Gradient class for the eigenPSF update.
+    
+    Parameters
     ----------
-    data : np.ndarray
-        Input data array, a array of 2D observed images (i.e. with noise)
-    A : np.ndarray
-        Current estimation of corresponding coefficients
-    flux : np.ndarray
-        Per-object flux value
-    sig : np.ndarray
-        Noise levels
-    ker : np.ndarray
-        Shifting kernels
-    ker_rot : np.ndarray
-        Inverted shifting kernels
-    D : float
-        Upsampling factor
-        
-    Notes
-    -----
-    The properties of `GradParent` and `PowerMethod` are inherited in this class
+    data: np.ndarray
+        Input data array, a array of 2D observed images (i.e. with noise).
+    A: np.ndarray
+        Current estimation of corresponding coefficients.
+    flux: np.ndarray
+        Per-object flux value.
+    sig: np.ndarray
+        Noise levels.
+    ker: np.ndarray
+        Shifting kernels.
+    ker_rot: np.ndarray
+        Inverted shifting kernels.
+    D: float
+        Upsampling factor.
     """
 
     def __init__(self, data, A, flux, sig, ker, ker_rot, D, data_type='float'):
@@ -153,6 +149,8 @@ class SourceGrad(GradParent, PowerMethod):
         self._current_rec = None # stores latest application of self.MX
 
     def update_A(self, new_A, update_spectral_radius=True):
+        """Update current weights.
+        """
         self.A = new_A
         if update_spectral_radius:
             PowerMethod.get_spec_rad(self)
@@ -163,7 +161,7 @@ class SourceGrad(GradParent, PowerMethod):
         Parameters
         ----------
         S : np.ndarray
-            Input data array, a set of eigenPSFs
+            Current eigenPSFs.
 
         Returns
         -------
@@ -177,19 +175,7 @@ class SourceGrad(GradParent, PowerMethod):
         return self._current_rec
 
     def MtX(self, x):
-        """MtX
-
-        This method calculates the action of the transpose of the matrix Mt on
-        the data X
-
-        Parameters
-        ----------
-        x : np.ndarray
-            Input data array, a cube of 2D images
-
-        Returns
-        -------
-        np.ndarray result
+        """Adjoint to degradation operator :func:`MX`.
 
         """
         normfacs = self.flux / (np.median(self.flux)*self.sig)
@@ -200,8 +186,8 @@ class SourceGrad(GradParent, PowerMethod):
         return upsamp_x.dot(self.A.T)
                 
     def cost(self, x, y=None, verbose=False):
-        """ Compute data fidelity term. ``y`` is unused (it's just so ``modopt.opt.algorithms.Condat`` can feed
-        the dual variable.)
+        """ Compute data fidelity term. ``y`` is unused (it's just so 
+        ``modopt.opt.algorithms.Condat`` can feed the dual variable.)
         """
         if isinstance(self._current_rec, type(None)):
             self._current_rec = self.MX(x)
@@ -209,18 +195,7 @@ class SourceGrad(GradParent, PowerMethod):
         return cost_val
                 
     def get_grad(self, x):
-        """Get the gradient step
-        This method calculates the gradient step from the input data
-        Parameters
-        ----------
-        x : np.ndarray
-            Input data array
-        Returns
-        -------
-        np.ndarray gradient value
-        Notes
-        -----
-        Calculates M^T (MX - Y)
+        """Compute current iteration's gradient.
         """
 
         self.grad = self.MtX(self.MX(x) - self.obs_data)

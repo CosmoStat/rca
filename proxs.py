@@ -1,5 +1,5 @@
 """ Defines proximal operators to be fed to ModOpt algorithm that are specific to RCA
-(or rather, not currently in `modopt.opt.proximity`)."""
+(or rather, not currently in ``modopt.opt.proximity``)."""
 
 from utils import lineskthresholding, reg_format, rca_format, SoftThresholding
 from modopt.signal.noise import thresh
@@ -9,7 +9,7 @@ from modopt.opt.linear import LinearParent
 
 
 class LinRecombine(object):
-    """ Multiply eigenvectors and weights."""
+    """ Multiply eigenvectors and (factorized) weights."""
     def __init__(self, A, compute_norm=False):
         self.A = A
         self.op = self.recombine
@@ -31,19 +31,12 @@ class LinRecombine(object):
             self.norm = np.sqrt(s[0])
 
 class KThreshold(object):
-    """ KThreshold proximity operator
-
-    This class defines linewise hard threshold operator with variable threshold
+    """This class defines linewise hard-thresholding operator with variable thresholds.
 
     Parameters
     ----------
-    iter_func : function
-        Input function that calcultates the number of non-zero values to keep in each line at each iteration
-        
-    Calls:
-    
-    * :func:`utils.lineskthresholding`
-
+    iter_func: function
+        Input function that calcultates the number of non-zero values to keep in each line at each iteration.
     """
     def __init__(self, iter_func):
 
@@ -51,46 +44,34 @@ class KThreshold(object):
         self.iter = 0
 
     def reset_iter(self):
-        """Reset iter
-
-        This method sets the iterations counter to zero
-
+        """Set iteration counter to zero.
         """
         self.iter = 0
 
 
     def op(self, data, extra_factor=1.0):
-        """Operator
-
-        This method returns the input data thresholded
-
-        Parameters
-        ----------
-        data : np.ndarray
-            Input data array
-        extra_factor : float
-            Additional multiplication factor
-
-        Returns
-        -------
-        np.ndarray thresholded data
-
+        """Return input data after thresholding.
         """
-
-
         self.iter += 1
-
         return lineskthresholding(data,self.iter_func(self.iter))
         
     def cost(self, x):
-        """Indicator of $\Omega$ is either 0 or infinity.
+        """Returns 0 (Indicator of :math:`\Omega` is either 0 or infinity).
         """
         return 0 
         
 class StarletThreshold(object):
     """Apply soft thresholding in Starlet domain.
-    """
 
+    Parameters
+    ----------
+    filters: np.ndarray
+        Starlet filters.
+    threshold: np.ndarray
+        Threshold levels.
+    thresh_type: str
+        Whether soft- or hard-thresholding should be used. Default is ``'soft'``.
+    """
     def __init__(self, filters, threshold, thresh_type='soft'):
         self.threshold = threshold
         # get Starlet filters
@@ -107,17 +88,7 @@ class StarletThreshold(object):
         return np.array([filter_convolve(im, self._filters) for im in data])
 
     def op(self, data, **kwargs):
-        """Operator
-
-        Parameters
-        ----------
-        data : np.ndarray
-            Input data array
-
-        Returns
-        -------
-        np.ndarray thresholded and recomposed data
-
+        """Applies Starlet transform and perform thresholding.
         """
         transf_data = self.starlet_transform(data)
         # Threshold all scales but the coarse

@@ -20,18 +20,18 @@ class RCA(object):
     upfact: int
         Upsampling factor. Default is 1 (no superresolution).
     ksig: float
-        Value of $k$ for the thresholding in Starlet domain (taken to be 
-        $k\sigma$, where $\sigma$ is the estimated noise standard deviation.
+        Value of :math:`k` for the thresholding in Starlet domain (taken to be 
+        :math:`k\sigma`, where :math:`\sigma` is the estimated noise standard deviation.
     n_scales: int
         Number of Starlet scales to use for the sparsity constraint. Default is 3.
     ksig_init: float
-        Similar to `ksig', for use when estimating shifts and noise levels, as it might 
-        be desirable to have it set higher than `ksig'. Unused if `shifts' are provided 
-        when running `RCA.fit'. Default is 5.
+        Similar to ``ksig``, for use when estimating shifts and noise levels, as it might 
+        be desirable to have it set higher than ``ksig``. Unused if ``shifts`` are provided 
+        when running :func:`RCA.fit`. Default is 5.
     n_scales_init: int
-        Similar to `n_scales', for use when estimating shifts and noise levels, as it might 
-        be sufficient to use fewer scales when initializing. Unused if `sigs' are provided
-        when running `RCA.fit'. Default is 2.
+        Similar to ``n_scales``, for use when estimating shifts and noise levels, as it might 
+        be sufficient to use fewer scales when initializing. Unused if ``sigs`` are provided
+        when running :func:`RCA.fit`. Default is 2.
     verbose: bool or int
         If True, will only output RCA-specific lines to stdout. #TODO: If verbose is set to 2,
         will run ModOpt's optimization algorithms in verbose mode. 
@@ -63,44 +63,44 @@ class RCA(object):
         obs_pos: np.ndarray
             Corresponding positions.
         S: np.ndarray
-            First guess (or warm start) eigenPSFs. Default is None.
+            First guess (or warm start) eigenPSFs :math:`S`. Default is ``None``.
         VT: np.ndarray
-            Matrix of concatenated graph Laplacians. Default is None.
+            Matrix of concatenated graph Laplacians. Default is ``None``.
         alpha: np.ndarray
-            First guess (or warm start) weights, after factorization by VT. Default is None.
+            First guess (or warm start) weights :math:`\\alpha`, after factorization by ``VT``. Default is ``None``.
         shifts: np.ndarray
-            Corresponding sub-pixel shifts. Default is None; will be estimated from
+            Corresponding sub-pixel shifts. Default is ``None``; will be estimated from
             observed data if not provided.
         centroids: np.ndarray
-            Corresponding image centroids. Default is None; will be estimated from
+            Corresponding image centroids. Default is ``None``; will be estimated from
             observed data if not provided.
         sigs: np.ndarray
-            Estimated noise levels. Default is None; will be estimated from data
+            Estimated noise levels. Default is ``None``; will be estimated from data
             if not provided.
         flux: np.ndarray
-            Flux levels. Default is None; will be estimated from data if not provided.
+            Flux levels. Default is ``None``; will be estimated from data if not provided.
         nb_iter: int
             Number of overall iterations (i.e. of alternations). Note the weights do not
-            get updated the last time around, so they actually get `nb_iter-1' updates.
+            get updated the last time around, so they actually get ``nb_iter-1`` updates.
             Default is 300.
         nb_subiter_S: int
-            Maximum number of iterations for S updates. If ModOpt's optimizers achieve 
+            Maximum number of iterations for :math:`S` updates. If ModOpt's optimizers achieve 
             internal convergence, that number may (and often is) not reached. Default is
             300.
         nb_reweight: int 
-            Number of reweightings to apply during S updates. See equation (33) in RCA paper. 
+            Number of reweightings to apply during :math:`S` updates. See equation (33) in RCA paper. 
             Default is 0.
         nb_subiter_weights: int
-            Maximum number of iterations for alpha updates. If ModOpt's optimizers achieve 
+            Maximum number of iterations for :math:`\\alpha` updates. If ModOpt's optimizers achieve 
             internal convergence, that number may (and often is) not reached. Default is None;
-            if not provided, will be set to `2*nb_subiter_S` (as it was in RCA v1). 
+            if not provided, will be set to ``2*nb_subiter_S`` (as it was in RCA v1). 
         n_eigenvects: int
-            Maximum number of eigenvectors to consider per $(e,a)$ couple. Default is None;
-            if not provided, _all_ eigenvectors will be considered, which can lead to a poor
-            selection of graphs, especially when data is undersampled. Ignored if VT and
-            alpha are provided.
+            Maximum number of eigenvectors to consider per :math:`(e,a)` couple. Default is ``None``;
+            if not provided, *all* eigenvectors will be considered, which can lead to a poor
+            selection of graphs, especially when data is undersampled. Ignored if ``VT`` and
+            ``alpha`` are provided.
         graph_kwargs: dictionary
-            List of optional kwargs to be passed on to the `func:utils.GraphBuilder`.
+            List of optional kwargs to be passed on to the :func:`utils.GraphBuilder`.
         """
         
         self.obs_data = np.copy(obs_data)
@@ -150,11 +150,11 @@ class RCA(object):
         ----------
         test_pos: np.ndarray
             Positions where the PSF should be estimated. Should be in the same format (units,
-            etc.) as the `obs_pos` fed to :func:RCA.fit`.
+            etc.) as the ``obs_pos`` fed to :func:`RCA.fit`.
         n_neighbors: int
             Number of neighbors to use for RBF interpolation. Default is 15.
         rbf_function: str
-            Type of RBF kernel to use. Default is 'thin_plate'.
+            Type of RBF kernel to use. Default is ``'thin_plate'``.
         """
         if not self.is_fitted:
             raise ValueError('RCA instance has not yet been fitted to observations. Please run\
