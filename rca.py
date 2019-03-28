@@ -184,13 +184,12 @@ class RCA(object):
         self.sig_min = np.min(self.sigs)
         # intra-pixel shifts
         if self.shifts is None or self.centroids is None:
-            thresholds = np.ones(self.shap)
+            thresh_data = np.copy(self.obs_data)
             for i in range(self.shap[2]):
                 # don't allow thresholding to be over 80% of maximum observed pixel
                 nsig_shifts = min(self.ksig_init,0.8*self.obs_data[:,:,i].max()/self.sigs[i])
-                thresholds[:,:,i] *= nsig_shifts*self.sigs[i]
-            psf_stack_shift = utils.thresholding_3D(self.obs_data,thresholds,0)
-            self.shifts,self.centroids = utils.shift_est(psf_stack_shift)
+                thresh_data[:,:,i] = utils.HardThresholding(thresh_data[:,:,i], nsig_shifts*self.sigs[i])
+            self.shifts,self.centroids = utils.shift_est(thresh_data)
         self.shift_ker_stack,self.shift_ker_stack_adj = utils.shift_ker_stack(self.shifts,
                                                                               self.upfact)
         # flux levels

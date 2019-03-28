@@ -151,39 +151,13 @@ def SoftThresholding(data,thresh):
     thresh_data[belowmask] = 0.
     thresh_data[abovemask] = (data - np.sign(data)*thresh)[abovemask]
     return thresh_data
-
-def thresholding(x,thresh,thresh_type): 
-    """ Performs either soft- (``thresh_type=1``) or hard-thresholding (``thresh_type=0``). Input can be 1D or 2D array.
-    """
-    xthresh = np.copy(x)
-    n = x.shape
-
-    if len(n)>0:
-        n1 = n[0]
-    else:
-        n1=1
-    n2=1
-    if len(n)==2:n2 =n[1]
-    i,j = 0,0
-    if len(n)==2:
-        for i in range(0,n1):
-            for j in range(0,n2):
-                if abs(xthresh[i,j])<thresh[i,j]:xthresh[i,j]=0
-                else:
-                    if xthresh[i,j]!=0:xthresh[i,j]=(abs(xthresh[i,j])/xthresh[i,j])*(abs(xthresh[i,j])-thresh_type*thresh[i,j])
-
-    elif len(n)==1:
-        for i in range(0,n1):
-            if abs(xthresh[i])<thresh[i]:xthresh[i]=0
-            else:
-                if xthresh[i]!=0:xthresh[i]=(abs(xthresh[i])/xthresh[i])*(abs(xthresh[i])-thresh_type*thresh[i])
-    elif len(n)==0:
-        if abs(xthresh)<thresh:xthresh=0
-        else:
-            if xthresh!=0:xthresh=(abs(xthresh)/xthresh)*(abs(xthresh)-thresh_type*thresh)
-
-    return xthresh
-
+    
+def HardThresholding(data,thresh):
+    """ Performs element-wise hard thresholding."""
+    thresh_data = np.copy(data)
+    thresh_data[thresh_data < thresh] = 0.
+    return thresh_data
+    
 def kthresholding(x,k):
     """ Applies k-thresholding (keep only ``k`` highest values, set rest to 0).
     """
@@ -212,22 +186,6 @@ def lineskthresholding(mat,k):
     for j in range(0,shap[0]):
         mat_out[j,:] = kthresholding(mat[j,:],k)
     return mat_out
-
-def thresholding_3D(x,thresh,thresh_type):
-    """Apply thresholding to a set of images (or transport plans I guess).
-    
-    Calls:
-    
-    * :func:`utils.thresholding`
-    """
-    shap = x.shape
-    nb_plan = shap[2]
-    k=0
-    xthresh = np.copy(x)
-    for k in range(0,nb_plan):
-        xthresh[:,:,k] = thresholding(np.copy(x[:,:,k]),thresh[:,:,k],thresh_type)
-
-    return xthresh
 
 def mad(x):
     """Computes MAD.
