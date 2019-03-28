@@ -173,9 +173,12 @@ class RCA(object):
     def _initialize(self):
         """ Initialization tasks related to noise levels, shifts and flux. Note it includes
         renormalizing observed data, so needs to be ran even if all three are provided."""
+        self.init_filters = get_mr_filters(self.shap[:2], opt=self.opt_sig_init, coarse=True)
         # noise levels
         if self.sigs is None:
-            self.sigs, _ = utils.im_gauss_nois_est_cube(self.obs_data, self.opt_sig_init)
+            transf_data = rca_prox.apply_transform(self.obs_data, self.init_filters)
+            sigmads = np.array([1.4826*utils.mad(fs[0]) for fs in transf_data])
+            self.sigs = sigmads / np.linalg.norm(self.init_filters[0])
         else:
             self.sigs = np.copy(self.sigs)
         self.sig_min = np.min(self.sigs)
@@ -212,7 +215,7 @@ class RCA(object):
         #### Source updates set-up ####
         # initialize dual variable and compute Starlet filters for Condat source updates 
         dual_var = np.zeros((self.im_hr_shape))
-        self.starlet_filters = get_mr_filters(self.im_hr_shape[:2], opt=self.opt, coarse = True)
+        self.starlet_filters = get_mr_filters(self.im_hr_shape[:2], opt=self.opt, coarse=True)
         rho_phi = np.sqrt(np.sum(np.sum(np.abs(self.starlet_filters),axis=(1,2))**2))
         
         # Set up source updates, starting with the gradient

@@ -232,8 +232,7 @@ def thresholding_3D(x,thresh,thresh_type):
 def mad(x):
     """Computes MAD.
     """
-    from numpy import *
-    return np.median(abs(x-median(x)))
+    return np.median(np.abs(x-np.median(x)))
 
 def lanczos(U,n=10,n2=None):
     """Generate Lanczos kernel for a given shift.
@@ -264,49 +263,6 @@ def lanczos(U,n=10,n2=None):
         for i in range(0,2*n):
             H[i] = np.sinc(np.pi*(U-(i-n)))*np.sinc(np.pi*(U-(i-n))/n)
     return H
-
-def im_gauss_nois_est(im,opt=['-t2','-n2'],filters=None):
-    """Compute sigma mad for... What appears to be the first wavelet scale only?
-    
-    Calls:
-    
-    * isap.mr_trans_2
-    * :func:`utils.mad`
-    """
-    from isap import mr_trans_2
-    Result,filters = mr_trans_2(im,filters=filters,opt=opt)
-    siz = im.shape
-    norm_wav = np.linalg.norm(filters[:,:,0])
-    sigma = 1.4826*mad(Result[:,:,0])/norm_wav
-
-    return sigma,filters
-
-def im_gauss_nois_est_cube(cube,opt=None,filters=None,return_map=False):
-    """
-    Estimate sigma mad for a set of images.
-    
-    #TODO: Note there is clearly something wrong with ``return_map`` since it fills in a ``map`` but 
-    does not return it (just the boolean saying it was filled).
-    
-    Calls:
-    
-    * :func:`utils.im_gauss_nois_est`
-    """
-    shap = cube.shape
-    sig = np.zeros((shap[2],))
-    map = None
-    if return_map:
-        map = np.ones(shap)
-
-    for i in range(0,shap[2]):
-        sig_i,filters = im_gauss_nois_est(cube[:,:,i],opt=opt,filters=filters)
-        sig[i] = sig_i
-        if return_map:
-            map[:,:,i] *= sig[i]
-    if return_map:
-        return sig,filters,return_map
-    else:
-        return sig,filters
 
 def shift_est(psf_stack): 
     """Estimates shifts (see SPRITE paper, section 3.4.1., subsection 'Subpixel shifts').

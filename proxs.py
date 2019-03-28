@@ -8,6 +8,21 @@ import numpy as np
 from modopt.opt.linear import LinearParent
 
 
+            
+def apply_transform(data, filters):
+    """ Transform ``data`` through application of a set of filters.
+    
+    Parameters
+    ----------
+    data: np.ndarray
+        Data to be transformed. Should be in RCA format (image index is contained
+        on last/2nd axis).
+    filters: np.ndarray
+        Set of filters.
+    """
+    data = reg_format(np.copy(data))
+    return np.array([filter_convolve(im, filters) for im in data])
+
 class LinRecombine(object):
     """ Multiply eigenvectors and (factorized) weights."""
     def __init__(self, A, compute_norm=False):
@@ -82,15 +97,11 @@ class StarletThreshold(object):
         self.threshold = new_threshold
         if new_thresh_type in ['soft', 'hard']:
             self._thresh_type = new_thresh_type
-            
-    def starlet_transform(self, data):
-        data = reg_format(np.copy(data))
-        return np.array([filter_convolve(im, self._filters) for im in data])
 
     def op(self, data, **kwargs):
         """Applies Starlet transform and perform thresholding.
         """
-        transf_data = self.starlet_transform(data)
+        transf_data = apply_transform(data, self._filters)
         # Threshold all scales but the coarse
         transf_data[:,:-1] = SoftThresholding(transf_data[:,:-1], self.threshold[:,:-1])
         thresh_data = np.sum(transf_data, axis=1)
