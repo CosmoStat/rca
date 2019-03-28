@@ -1,9 +1,6 @@
 import scipy.signal as scisig
 import gaussfitter
-import datetime,time
 import numpy as np
-
-from scipy import interpolate
 
 import scipy.linalg as sci_lin
 
@@ -292,12 +289,6 @@ def shift_ker_stack(shifts,upfact,lanc_rad=4):
         shift_ker_stack_adj[:,:,i] = np.rot90(shift_ker_stack[:,:,i],2)
 
     return shift_ker_stack,shift_ker_stack_adj
-    
-def rand_file_name(ext):
-    """ Generates random file name. Called by `isap`. Super unsafe!
-    #TODO: get rid of it."""
-    current_time = datetime.datetime.now().time()
-    return 'file'+str(time.clock())+ext
         
 def gen_Pea(distances, e, a):
     """ Computes :math:`P_{e,a}` matrix for given ``e``, ``a`` couple. See Equations (16-17)

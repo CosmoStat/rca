@@ -1,6 +1,5 @@
 import numpy as np
 import utils
-from scipy.signal import fftconvolve
 from modopt.signal.wavelet import get_mr_filters, filter_convolve
 from modopt.opt.cost import costObj
 from modopt.opt.proximity import Positivity
