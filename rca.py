@@ -269,8 +269,8 @@ class RCA(object):
                                                    Positivity(), linear = lin_recombine,
                                                    max_iter=self.nb_subiter_S, tau=tau, sigma=sigma)
                     comp = source_optim.x_final
-                    transf_data = sparsity_prox.starlet_transform(comp)
-                    reweighter.reweight(transf_data)
+                    transf_comp = rca_prox.apply_transform(comp, self.starlet_filters)
+                    reweighter.reweight(transf_comp)
                     thresholds = reweighter.weights 
             else:
                 source_optim = optimalg.Condat(comp, dual_var, source_grad, sparsity_prox,
