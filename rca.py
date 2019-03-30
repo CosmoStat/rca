@@ -246,7 +246,7 @@ class RCA(object):
             
             # ... set optimization parameters...
             beta = source_grad.spec_rad + rho_phi
-            raise ValueError
+            #beta = 0.6563937030792308 + rho_phi
             tau = 1./beta
             sigma = 1./lin_recombine.norm * beta/2
 
