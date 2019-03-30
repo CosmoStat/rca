@@ -50,7 +50,7 @@ class RCA(object):
         self.is_fitted = False
         
     def fit(self, obs_data, obs_pos, S=None, VT=None, alpha=None,
-            shifts=None, centroids=None, sigs=None, flux=None,
+            shifts=None, sigs=None, flux=None,
             nb_iter=2, nb_subiter_S=300, nb_reweight=0, 
             nb_subiter_weights=None, n_eigenvects=None, graph_kwargs={}):
         """ Fits RCA to observed star field.
@@ -69,9 +69,6 @@ class RCA(object):
             First guess (or warm start) weights :math:`\\alpha`, after factorization by ``VT``. Default is ``None``.
         shifts: np.ndarray
             Corresponding sub-pixel shifts. Default is ``None``; will be estimated from
-            observed data if not provided.
-        centroids: np.ndarray
-            Corresponding image centroids. Default is ``None``; will be estimated from
             observed data if not provided.
         sigs: np.ndarray
             Estimated noise levels. Default is ``None``; will be estimated from data
@@ -113,7 +110,6 @@ class RCA(object):
         self.VT = VT
         self.alpha = alpha
         self.shifts = shifts
-        self.centroids = centroids #TODO: compute them from shifts
         self.sigs = sigs
         self.flux = flux
         self.nb_iter = nb_iter
@@ -182,13 +178,13 @@ class RCA(object):
             self.sigs = np.copy(self.sigs)
         self.sig_min = np.min(self.sigs)
         # intra-pixel shifts
-        if self.shifts is None or self.centroids is None:
+        if self.shifts is None:
             thresh_data = np.copy(self.obs_data)
             for i in range(self.shap[2]):
                 # don't allow thresholding to be over 80% of maximum observed pixel
                 nsig_shifts = min(self.ksig_init,0.8*self.obs_data[:,:,i].max()/self.sigs[i])
                 thresh_data[:,:,i] = utils.HardThresholding(thresh_data[:,:,i], nsig_shifts*self.sigs[i])
-            self.shifts,self.centroids = utils.shift_est(thresh_data)
+            self.shifts,_ = utils.shift_est(thresh_data)
         self.shift_ker_stack,self.shift_ker_stack_adj = utils.shift_ker_stack(self.shifts,
                                                                               self.upfact)
         # flux levels
@@ -218,13 +214,14 @@ class RCA(object):
         
         # Set up source updates, starting with the gradient
         source_grad = grads.SourceGrad(self.obs_data, weights, self.flux, self.sigs, 
-                                      self.shift_ker_stack, self.shift_ker_stack_adj, self.upfact)
+                                      self.shift_ker_stack, self.shift_ker_stack_adj, 
+                                      self.upfact, self.starlet_filters)
 
         # sparsity in Starlet domain prox (this is actually assuming synthesis form)
-        sparsity_prox = rca_prox.StarletThreshold(self.starlet_filters, 0)
+        sparsity_prox = rca_prox.StarletThreshold(0) # we'll update to the actual thresholds later
 
         # and the linear recombination for the positivity constraint
-        lin_recombine = rca_prox.LinRecombine(weights)
+        lin_recombine = rca_prox.LinRecombine(weights, self.starlet_filters)
 
         #### Weight updates set-up ####
         # gradient
@@ -249,6 +246,7 @@ class RCA(object):
             
             # ... set optimization parameters...
             beta = source_grad.spec_rad + rho_phi
+            raise ValueError
             tau = 1./beta
             sigma = 1./lin_recombine.norm * beta/2
 
@@ -262,21 +260,22 @@ class RCA(object):
             sparsity_prox.update_threshold(tau*thresholds)
             
             # and run source update:
+            transf_comp = rca_prox.apply_transform(comp, self.starlet_filters)
             if self.nb_reweight:
                 reweighter = cwbReweight(thresholds)
                 for _ in range(self.nb_reweight):
-                    source_optim = optimalg.Condat(comp, dual_var, source_grad, sparsity_prox,
+                    source_optim = optimalg.Condat(transf_comp, dual_var, source_grad, sparsity_prox,
                                                    Positivity(), linear = lin_recombine,
                                                    max_iter=self.nb_subiter_S, tau=tau, sigma=sigma)
-                    comp = source_optim.x_final
-                    transf_data = sparsity_prox.starlet_transform(comp)
-                    reweighter.reweight(transf_data)
+                    transf_comp = source_optim.x_final
+                    reweighter.reweight(transf_comp)
                     thresholds = reweighter.weights 
             else:
-                source_optim = optimalg.Condat(comp, dual_var, source_grad, sparsity_prox,
+                source_optim = optimalg.Condat(transf_comp, dual_var, source_grad, sparsity_prox,
                                                Positivity(), linear = lin_recombine,
                                                max_iter=self.nb_subiter_S, tau=tau, sigma=sigma)
-                comp = source_optim.x_final
+                transf_comp = source_optim.x_final
+            comp = utils.rca_format(np.sum(transf_comp, axis=1)) #[SCALESUMTAG]
             
             #TODO: replace line below with Fred's component selection (to be extracted from `low_rank_global_src_est_comb`)
             ind_select = range(comp.shape[2])
@@ -305,7 +304,7 @@ class RCA(object):
         self.weights = weights
         self.S = comp
         self.alpha = alpha
-        source_grad.MX(self.S)
+        source_grad.MX(transf_comp)
         self.current_rec = source_grad._current_rec
 
     def _transform(self, weights):

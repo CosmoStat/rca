@@ -1,8 +1,21 @@
 import scipy.signal as scisig
 import gaussfitter
 import numpy as np
+from modopt.signal.wavelet import filter_convolve
 
-import scipy.linalg as sci_lin
+def apply_transform(data, filters):
+    """ Transform ``data`` through application of a set of filters.
+    
+    Parameters
+    ----------
+    data: np.ndarray
+        Data to be transformed. Should be in RCA format (image index is contained
+        on last/2nd axis).
+    filters: np.ndarray
+        Set of filters.
+    """
+    data = reg_format(np.copy(data))
+    return np.array([filter_convolve(im, filters) for im in data])
 
 def acc_sig_maps(shap_im,ker_stack,sig_est,flux_est,flux_ref,upfact,w,sig_data=None):
     shap = w.shape
