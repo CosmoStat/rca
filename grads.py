@@ -3,7 +3,6 @@ from modopt.opt.gradient import GradParent, GradBasic
 from modopt.math.matrix import PowerMethod
 import utils
 from scipy.signal import fftconvolve
-import psf_toolkit as tk
 
 def degradation_op(X, shift_ker, D):
     """ Shift and decimate fine-grid image."""
