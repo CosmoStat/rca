@@ -1,43 +1,30 @@
 """ Defines proximal operators to be fed to ModOpt algorithm that are specific to RCA
 (or rather, not currently in ``modopt.opt.proximity``)."""
 
-from utils import lineskthresholding, reg_format, rca_format, SoftThresholding
+from utils import lineskthresholding, reg_format, rca_format, SoftThresholding, apply_transform
 from modopt.signal.noise import thresh
-from modopt.signal.wavelet import filter_convolve
 import numpy as np
 from modopt.opt.linear import LinearParent
-
-
-            
-def apply_transform(data, filters):
-    """ Transform ``data`` through application of a set of filters.
-    
-    Parameters
-    ----------
-    data: np.ndarray
-        Data to be transformed. Should be in RCA format (image index is contained
-        on last/2nd axis).
-    filters: np.ndarray
-        Set of filters.
-    """
-    data = reg_format(np.copy(data))
-    return np.array([filter_convolve(im, filters) for im in data])
-
+from modopt.signal.wavelet import filter_convolve
+     
 class LinRecombine(object):
     """ Multiply eigenvectors and (factorized) weights."""
-    def __init__(self, A, compute_norm=False):
+    def __init__(self, A, filters, compute_norm=False):
         self.A = A
         self.op = self.recombine
         self.adj_op = self.adj_rec
+        self.filters = filters
         if compute_norm:
             U, s, Vt = np.linalg.svd(self.A.dot(self.A.T),full_matrices=False)
             self.norm = np.sqrt(s[0])
         
-    def recombine(self, S):
-        return S.dot(self.A)
+    def recombine(self, transf_S):
+        S = np.array([filter_convolve(transf_Sj, self.filters, filter_rot=True)
+                      for transf_Sj in transf_S])
+        return rca_format(S).dot(self.A)
         
     def adj_rec(self, Y):
-        return Y.dot(self.A.T)
+        return apply_transform(Y.dot(self.A.T), self.filters)
         
     def update_A(self, new_A, update_norm=True):
         self.A = new_A
@@ -80,17 +67,13 @@ class StarletThreshold(object):
 
     Parameters
     ----------
-    filters: np.ndarray
-        Starlet filters.
     threshold: np.ndarray
         Threshold levels.
     thresh_type: str
         Whether soft- or hard-thresholding should be used. Default is ``'soft'``.
     """
-    def __init__(self, filters, threshold, thresh_type='soft'):
+    def __init__(self, threshold, thresh_type='soft'):
         self.threshold = threshold
-        # get Starlet filters
-        self._filters = filters
         self._thresh_type = thresh_type
 
     def update_threshold(self, new_threshold, new_thresh_type=None):
@@ -98,15 +81,12 @@ class StarletThreshold(object):
         if new_thresh_type in ['soft', 'hard']:
             self._thresh_type = new_thresh_type
 
-    def op(self, data, **kwargs):
+    def op(self, transf_data, **kwargs):
         """Applies Starlet transform and perform thresholding.
         """
-        transf_data = apply_transform(data, self._filters)
         # Threshold all scales but the coarse
         transf_data[:,:-1] = SoftThresholding(transf_data[:,:-1], self.threshold[:,:-1])
-        thresh_data = np.sum(transf_data, axis=1)
-        thresh_data = rca_format(thresh_data)
-        return thresh_data
+        return transf_data
 
     def cost(self, x, y):
         return 0 #TODO

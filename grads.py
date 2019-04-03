@@ -1,6 +1,7 @@
 import numpy as np
 from modopt.opt.gradient import GradParent, GradBasic
 from modopt.math.matrix import PowerMethod
+from modopt.signal.wavelet import filter_convolve
 import utils
 from scipy.signal import fftconvolve
 
@@ -127,9 +128,11 @@ class SourceGrad(GradParent, PowerMethod):
         Inverted shifting kernels.
     D: float
         Upsampling factor.
+    filters: np.ndarray
+        Set of filters.
     """
 
-    def __init__(self, data, A, flux, sig, ker, ker_rot, D, data_type='float'):
+    def __init__(self, data, A, flux, sig, ker, ker_rot, D, filters, data_type='float'):
         self._grad_data_type = data_type
         self.obs_data = data
         self.op = self.MX 
@@ -140,10 +143,11 @@ class SourceGrad(GradParent, PowerMethod):
         self.ker = ker
         self.ker_rot  = ker_rot
         self.D = D
+        self.filters = filters
         # initialize Power Method to compute spectral radius
         hr_shape = np.array(data.shape[:2])*D
         PowerMethod.__init__(self, self.trans_op_op, 
-                        tuple(hr_shape)+(A.shape[0],), auto_run=False)
+                        (A.shape[0],filters.shape[0])+tuple(hr_shape), auto_run=False)
         
         self._current_rec = None # stores latest application of self.MX
 
@@ -154,13 +158,13 @@ class SourceGrad(GradParent, PowerMethod):
         if update_spectral_radius:
             PowerMethod.get_spec_rad(self)
 
-    def MX(self, S):
+    def MX(self, transf_S):
         """Apply degradation operator and renormalize.
 
         Parameters
         ----------
-        S : np.ndarray
-            Current eigenPSFs.
+        transf_S : np.ndarray
+            Current eigenPSFs in Starlet space.
 
         Returns
         -------
@@ -168,6 +172,8 @@ class SourceGrad(GradParent, PowerMethod):
 
         """
         normfacs = self.flux / (np.median(self.flux)*self.sig)
+        S = utils.rca_format(np.array([filter_convolve(transf_Sj, self.filters, filter_rot=True)
+                             for transf_Sj in transf_S]))
         dec_rec = np.array([nf * degradation_op(S.dot(A_i),shift_ker,self.D) for nf,A_i,shift_ker 
                        in zip(normfacs, self.A.T, utils.reg_format(self.ker))])
         self._current_rec = utils.rca_format(dec_rec)
@@ -182,7 +188,7 @@ class SourceGrad(GradParent, PowerMethod):
         upsamp_x = np.array([nf * adjoint_degradation_op(x_i,shift_ker,self.D) for nf,x_i,shift_ker 
                        in zip(normfacs, x, utils.reg_format(self.ker_rot))])
         x, upsamp_x = utils.rca_format(x), utils.rca_format(upsamp_x)
-        return upsamp_x.dot(self.A.T)
+        return utils.apply_transform(upsamp_x.dot(self.A.T), self.filters) 
                 
     def cost(self, x, y=None, verbose=False):
         """ Compute data fidelity term. ``y`` is unused (it's just so 
