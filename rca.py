@@ -275,7 +275,8 @@ class RCA(object):
                                                Positivity(), linear = lin_recombine,
                                                max_iter=self.nb_subiter_S, tau=tau, sigma=sigma)
                 transf_comp = source_optim.x_final
-            comp = utils.rca_format(np.sum(transf_comp, axis=1)) #[SCALESUMTAG]
+            comp = utils.rca_format(np.array([filter_convolve(transf_compj, self.starlet_filters, True)
+                                    for transf_compj in transf_comp]))
             
             #TODO: replace line below with Fred's component selection (to be extracted from `low_rank_global_src_est_comb`)
             ind_select = range(comp.shape[2])

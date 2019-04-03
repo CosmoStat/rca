@@ -5,6 +5,7 @@ from utils import lineskthresholding, reg_format, rca_format, SoftThresholding, 
 from modopt.signal.noise import thresh
 import numpy as np
 from modopt.opt.linear import LinearParent
+from modopt.signal.wavelet import filter_convolve
      
 class LinRecombine(object):
     """ Multiply eigenvectors and (factorized) weights."""
@@ -18,12 +19,12 @@ class LinRecombine(object):
             self.norm = np.sqrt(s[0])
         
     def recombine(self, transf_S):
-        S = np.sum(transf_S, axis=1) #[SCALESUMTAG]
+        S = np.array([filter_convolve(transf_Sj, self.filters, filter_rot=True)
+                      for transf_Sj in transf_S])
         return rca_format(S).dot(self.A)
         
     def adj_rec(self, Y):
-        return apply_transform(Y.dot(self.A.T), self.filters) #[SCALESUMTAG]
-                                                                    # ok not really but same difference
+        return apply_transform(Y.dot(self.A.T), self.filters)
         
     def update_A(self, new_A, update_norm=True):
         self.A = new_A
