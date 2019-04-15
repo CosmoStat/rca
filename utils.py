@@ -1,5 +1,4 @@
 import scipy.signal as scisig
-import gaussfitter
 import numpy as np
 from modopt.signal.wavelet import filter_convolve
 
@@ -108,51 +107,6 @@ def transpose_decim(im,decim_fact,av_en=0):
 
     return im_out
 
-def compute_centroid(im,sigw=None,nb_iter=4):
-    """ Computes centroid.
-    
-    Calls:
-    
-    * gaussfitter.gaussfit
-    """
-    if sigw is None:
-        param=gaussfitter.gaussfit(im,returnfitimage=False)
-        #print param
-        sigw = (param[3]+param[4])/2
-    sigw = float(sigw)
-    n1 = im.shape[0]
-    n2 = im.shape[1]
-    rx = np.array(range(0,n1))
-    ry = np.array(range(0,n2))
-    Wc = np.ones((n1,n2))
-    centroid = np.zeros((1,2))
-    # Four iteration loop to compute the centroid
-    i=0
-    for i in range(0,nb_iter):
-
-        xx = np.ma.outerproduct(rx-centroid[0,0],np.ones(n2))
-        yy = np.ma.outerproduct(np.ones(n1),ry-centroid[0,1])
-        W = np.exp(-(xx**2+yy**2)/(2*sigw**2))
-        centroid = np.zeros((1,2))
-        # Estimate Centroid
-        Wc = np.copy(W)
-        if i == 0:Wc = np.ones((n1,n2))
-        totx=0.0
-        toty=0.0
-        cx=0
-        cy=0
-
-        for cx in range(0,n1):
-            centroid[0,0] += (im[cx,:]*Wc[cx,:]).sum()*(cx)
-            totx += (im[cx,:]*Wc[cx,:]).sum()
-        for cy in range(0,n2):
-            centroid[0,1] += (im[:,cy]*Wc[:,cy]).sum()*(cy)
-            toty += (im[:,cy]*Wc[:,cy]).sum()
-        centroid = centroid*np.array([1/totx,1/toty])
-
-
-    return (centroid,Wc)
-
 def SoftThresholding(data,thresh):
     """ Performs element-wise soft thresholding."""
     thresh_data = np.copy(data)
@@ -232,30 +186,7 @@ def lanczos(U,n=10,n2=None):
             H[i] = np.sinc(np.pi*(U-(i-n)))*np.sinc(np.pi*(U-(i-n))/n)
     return H
 
-def shift_est(psf_stack): 
-    """Estimates shifts (see SPRITE paper, section 3.4.1., subsection 'Subpixel shifts').
-    #TODO? replace this
-    
-    Calls:
-    
-    * gaussfitter.gaussfit
-    * :func:`utils.compute_centroid`
-    """
-    shap = psf_stack.shape
-    U = np.zeros((shap[2],2))
-    param=gaussfitter.gaussfit(psf_stack[:,:,0],returnfitimage=False)
-    #(centroid_ref,Wc) = compute_centroid(psf_stack[:,:,0],(param[3]+param[4])/2)
-    centroid_out = np.zeros((shap[2],2))
-    for i in range(0,shap[2]):
-        param=gaussfitter.gaussfit(psf_stack[:,:,i],returnfitimage=False)
-        (centroid,Wc) = compute_centroid(psf_stack[:,:,i],(param[3]+param[4])/2)
-        U[i,0] = centroid[0,0]-np.double(shap[0])/2
-        U[i,1] = centroid[0,1]-np.double(shap[1])/2
-        centroid_out[i,0]  = centroid[0,0]
-        centroid_out[i,1]  = centroid[0,1]
-    return U,centroid_out
-
-def flux_estimate(im,cent=None,rad=4): # Default value for the flux tunned for Euclid PSF at Euclid resolution
+def flux_estimate(im,cent=None,rad=4): # Default value for the flux tuned for Euclid PSF at Euclid resolution
     """Estimate flux for one image (see SPRITE paper, section 3.4.1., subsection 'Photometric flux').
     """
     flux = 0

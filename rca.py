@@ -211,7 +211,7 @@ window of 7.5 pixels.''')
                 # don't allow thresholding to be over 80% of maximum observed pixel
                 nsig_shifts = min(self.ksig_init,0.8*self.obs_data[:,:,i].max()/self.sigs[i])
                 thresh_data[:,:,i] = utils.HardThresholding(thresh_data[:,:,i], nsig_shifts*self.sigs[i])
-                cents += [utils.CentroidEstimator(thresh_data[:,:,i], self.psf_size)]
+                cents += [utils.CentroidEstimator(thresh_data[:,:,i], sig=self.psf_size)]
             self.shifts = np.array([ce.return_shifts() for ce in cents])
         self.shift_ker_stack,self.shift_ker_stack_adj = utils.shift_ker_stack(self.shifts,
                                                                               self.upfact)
