@@ -480,7 +480,7 @@ class GraphBuilder(object):
             
 class CentroidEstimator(object):
     """ Estimate intra-pixel shifts."""
-    def __init__(self, im, sig=1.5, n_iter=5, auto_run=True,
+    def __init__(self, im, sig=7.5, n_iter=5, auto_run=True,
                  xc=None, yc=None):
         self.im = im
         self.stamp_size = im.shape
@@ -529,6 +529,8 @@ class CentroidEstimator(object):
         return self.xc, self.yc
         
     def return_shifts(self):
+        """ Returns intra-pixel shifts, that is, the difference between the estimated centroid
+        and the center of the stamp (or pixel grid)."""
         return [self.xc-self.xc0, self.yc-self.yc0]
 
 

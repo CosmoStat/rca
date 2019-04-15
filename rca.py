@@ -50,8 +50,8 @@ class RCA(object):
         self.is_fitted = False
         
     def fit(self, obs_data, obs_pos, S=None, VT=None, alpha=None,
-            shifts=None, sigs=None, flux=None,
-            nb_iter=2, nb_subiter_S=300, nb_reweight=0, 
+            shifts=None, sigs=None, psf_size=None, psf_size_type='fwhm',
+            flux=None, nb_iter=2, nb_subiter_S=300, nb_reweight=0, 
             nb_subiter_weights=None, n_eigenvects=None, graph_kwargs={}):
         """ Fits RCA to observed star field.
         
@@ -73,6 +73,13 @@ class RCA(object):
         sigs: np.ndarray
             Estimated noise levels. Default is ``None``; will be estimated from data
             if not provided.
+        psf_size: float
+            Approximate expected PSF size in pixels; will be used for the size of the Gaussian window for centroid estimation.
+            `psf_size_type` determines the convention used for this size (default is FWHM).
+            Ignored if `shifts` are provided. Default is Gaussian sigma of 7.5 pixels.
+        psf_size_type: str
+            Can be any of `'R2'`, `'fwhm'` or `'sigma'`, for the size defined from quadrupole moments, full width at half maximum
+            (e.g. from SExtractor) or 1-sigma width of the best matching 2D Gaussian. Default is `'fwhm'`.
         flux: np.ndarray
             Flux levels. Default is ``None``; will be estimated from data if not provided.
         nb_iter: int
@@ -110,6 +117,8 @@ class RCA(object):
         self.VT = VT
         self.alpha = alpha
         self.shifts = shifts
+        if shifts is None:
+            self.psf_size = self.set_psf_size(psf_size, psf_size_type)
         self.sigs = sigs
         self.flux = flux
         self.nb_iter = nb_iter
@@ -137,6 +146,23 @@ class RCA(object):
         self._fit()
         self.is_fitted = True
         return self.S, self.weights
+        
+    def set_psf_size(self, psf_size, psf_size_type):
+        """ Handles different "size" conventions."""
+        if psf_size is not None:
+            if psf_size_type == 'fwhm':
+                return psf_size / (2*np.sqrt(2*np.log(2)))
+            elif psf_size_type == 'R2':
+                return np.sqrt(psf_size / 2)
+            elif psf_size_type == 'sigma':
+                return psf_size
+            else:
+                raise ValueError('psf_size_type should be one of "fwhm", "R2" or "sigma"')
+        else:
+            print('''Warning: neither shifts nor an estimated PSF size were provided to RCA;
+the shifts will be estimated from the data using the default Gaussian
+window of 7.5 pixels.''')
+            return 7.5
         
     def estimate_psf(self, test_pos, n_neighbors=15, rbf_function='thin_plate'):
         """ Estimate and return PSF at desired positions.
@@ -180,11 +206,13 @@ class RCA(object):
         # intra-pixel shifts
         if self.shifts is None:
             thresh_data = np.copy(self.obs_data)
+            cents = []
             for i in range(self.shap[2]):
                 # don't allow thresholding to be over 80% of maximum observed pixel
                 nsig_shifts = min(self.ksig_init,0.8*self.obs_data[:,:,i].max()/self.sigs[i])
                 thresh_data[:,:,i] = utils.HardThresholding(thresh_data[:,:,i], nsig_shifts*self.sigs[i])
-            self.shifts,_ = utils.shift_est(thresh_data)
+                cents += [utils.CentroidEstimator(thresh_data[:,:,i], self.psf_size)]
+            self.shifts = np.array([ce.return_shifts() for ce in cents])
         self.shift_ker_stack,self.shift_ker_stack_adj = utils.shift_ker_stack(self.shifts,
                                                                               self.upfact)
         # flux levels
