@@ -477,3 +477,58 @@ class GraphBuilder(object):
         U, s, vT = np.linalg.svd(mat,full_matrices=True)
         vT = vT[-self.n_eigenvects:]
         return vT
+            
+class CentroidEstimator(object):
+    """ Estimate intra-pixel shifts."""
+    def __init__(self, im, sig=1.5, n_iter=5, auto_run=True,
+                 xc=None, yc=None):
+        self.im = im
+        self.stamp_size = im.shape
+        self.ranges = np.array([np.arange(i) for i in self.stamp_size])
+        self.sig = sig
+        self.n_iter=5
+        self.xc0, self.yc0 = float(self.stamp_size[0])/2, float(self.stamp_size[1])/2
+        if xc is None or yc is None:
+            self.xc = self.xc0
+            self.yc = self.yc0
+        else:
+            self.xc = xc
+            self.yc = yc
+        if auto_run:
+            self.estimate()
+            
+    def UpdateGrid(self):
+        self.xx = np.outer(self.ranges[0] - self.xc,
+                          np.ones(self.stamp_size[1]))
+        self.yy = np.outer(np.ones(self.stamp_size[0]),
+                          self.ranges[1] - self.yc)
+                          
+    def EllipticalGaussian(self, e1=0, e2=0):
+        """ Computes an elliptical 2D gaussian with arbitrary centroid."""
+        # shear it
+        gxx = (1-e1)*self.xx - e2*self.yy
+        gyy = (1+e1)*self.yy - e2*self.xx
+        # compute elliptical gaussian
+        return np.exp(-(gxx ** 2 + gyy ** 2) / (2 * self.sig ** 2))
+        
+    def ComputeMoments(self):
+        Q0 = np.sum(self.im*self.window)
+        Q1 = np.array([np.sum(np.sum(self.im * self.window, axis=1-i) * self.ranges[i])
+                       for i in range(2)])
+        #Q2 = np.array([np.sum(self.im*self.window * self.xx**(2-i) * self.yy**i) 
+        #               for i in range(3)])
+        self.xc = Q1[0]/Q0
+        self.yc = Q1[1]/Q0
+            
+    def estimate(self):
+        for _ in range(self.n_iter):
+            self.UpdateGrid()
+            self.window = self.EllipticalGaussian()
+            # Calculate weighted moments.
+            self.ComputeMoments()
+        return self.xc, self.yc
+        
+    def return_shifts(self):
+        return [self.xc-self.xc0, self.yc-self.yc0]
+
+
