@@ -32,12 +32,12 @@ class RCA(object):
         be sufficient to use fewer scales when initializing. Unused if ``sigs`` are provided
         when running :func:`RCA.fit`. Default is 2.
     verbose: bool or int
-        If True, will only output RCA-specific lines to stdout. #TODO: If verbose is set to 2,
+        If True, will only output RCA-specific lines to stdout. If verbose is set to 2,
         will run ModOpt's optimization algorithms in verbose mode. 
         
     """
     def __init__(self, n_comp, upfact=1, ksig=4, n_scales=3,
-                 ksig_init=5, n_scales_init=2, verbose=True):
+                 ksig_init=5, n_scales_init=2, verbose=2):
         self.n_comp = n_comp
         self.upfact = upfact
         self.ksig = ksig
@@ -47,6 +47,10 @@ class RCA(object):
         self.opt_sig_init = ['-t2', '-n{}'.format(n_scales_init)]
         self.opt = ['-t2', '-n{}'.format(n_scales)]
         self.verbose = verbose
+        if self.verbose > 1:
+            self.modopt_verb = True
+        else:
+            self.modopt_verb = False
         self.is_fitted = False
         
     def fit(self, obs_data, obs_pos, S=None, VT=None, alpha=None,
@@ -159,7 +163,7 @@ class RCA(object):
             else:
                 raise ValueError('psf_size_type should be one of "fwhm", "R2" or "sigma"')
         else:
-            print('''Warning: neither shifts nor an estimated PSF size were provided to RCA;
+            print('''WARNING: neither shifts nor an estimated PSF size were provided to RCA;
 the shifts will be estimated from the data using the default Gaussian
 window of 7.5 pixels.''')
             return 7.5
@@ -225,7 +229,8 @@ window of 7.5 pixels.''')
     
     def _initialize_graph_constraint(self):
         gber = utils.GraphBuilder(self.obs_data, self.obs_pos, self.n_comp, 
-                                  n_eigenvects=self.n_eigenvects, **self.graph_kwargs)
+                                  n_eigenvects=self.n_eigenvects, verbose=self.verbose,
+                                  **self.graph_kwargs)
         self.VT, self.alpha, self.distances = gber.VT, gber.alpha, gber.distances
         self.sel_e, self.sel_a = gber.sel_e, gber.sel_a
         self.weights = self.alpha.dot(self.VT)
@@ -257,7 +262,8 @@ window of 7.5 pixels.''')
                                       self.shift_ker_stack, self.shift_ker_stack_adj, self.upfact)
         
         # cost function
-        weight_cost = costObj([weight_grad]) 
+        weight_cost = costObj([weight_grad], verbose=self.modopt_verb) 
+        source_cost = costObj([source_grad], verbose=self.modopt_verb)
         
         # k-thresholding for spatial constraint
         iter_func = lambda x: np.floor(np.sqrt(x))+1
@@ -293,14 +299,14 @@ window of 7.5 pixels.''')
                 reweighter = cwbReweight(thresholds)
                 for _ in range(self.nb_reweight):
                     source_optim = optimalg.Condat(transf_comp, dual_var, source_grad, sparsity_prox,
-                                                   Positivity(), linear = lin_recombine,
+                                                   Positivity(), linear = lin_recombine, cost=source_cost,
                                                    max_iter=self.nb_subiter_S, tau=tau, sigma=sigma)
                     transf_comp = source_optim.x_final
                     reweighter.reweight(transf_comp)
                     thresholds = reweighter.weights 
             else:
                 source_optim = optimalg.Condat(transf_comp, dual_var, source_grad, sparsity_prox,
-                                               Positivity(), linear = lin_recombine,
+                                               Positivity(), linear = lin_recombine, cost=source_cost,
                                                max_iter=self.nb_subiter_S, tau=tau, sigma=sigma)
                 transf_comp = source_optim.x_final
             comp = utils.rca_format(np.array([filter_convolve(transf_compj, self.starlet_filters, True)
