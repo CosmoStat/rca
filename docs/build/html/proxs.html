@@ -1,0 +1,141 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>proxs &#8212; RCA 2 documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="grads" href="grads.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-proxs">
+<span id="proxs"></span><h1>proxs<a class="headerlink" href="#module-proxs" title="Permalink to this headline">¶</a></h1>
+<p>Defines proximal operators to be fed to ModOpt algorithm that are specific to RCA
+(or rather, not currently in <code class="docutils literal notranslate"><span class="pre">modopt.opt.proximity</span></code>).</p>
+<dl class="class">
+<dt id="proxs.KThreshold">
+<em class="property">class </em><code class="descclassname">proxs.</code><code class="descname">KThreshold</code><span class="sig-paren">(</span><em>iter_func</em><span class="sig-paren">)</span><a class="headerlink" href="#proxs.KThreshold" title="Permalink to this definition">¶</a></dt>
+<dd><p>This class defines linewise hard-thresholding operator with variable thresholds.</p>
+<dl class="docutils">
+<dt>iter_func: function</dt>
+<dd>Input function that calcultates the number of non-zero values to keep in each line at each iteration.</dd>
+</dl>
+<dl class="method">
+<dt id="proxs.KThreshold.cost">
+<code class="descname">cost</code><span class="sig-paren">(</span><em>x</em><span class="sig-paren">)</span><a class="headerlink" href="#proxs.KThreshold.cost" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns 0 (Indicator of <span class="math notranslate nohighlight">\(\Omega\)</span> is either 0 or infinity).</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="proxs.KThreshold.op">
+<code class="descname">op</code><span class="sig-paren">(</span><em>data</em>, <em>extra_factor=1.0</em><span class="sig-paren">)</span><a class="headerlink" href="#proxs.KThreshold.op" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return input data after thresholding.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="proxs.KThreshold.reset_iter">
+<code class="descname">reset_iter</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#proxs.KThreshold.reset_iter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set iteration counter to zero.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="proxs.LinRecombine">
+<em class="property">class </em><code class="descclassname">proxs.</code><code class="descname">LinRecombine</code><span class="sig-paren">(</span><em>A</em>, <em>filters</em>, <em>compute_norm=False</em><span class="sig-paren">)</span><a class="headerlink" href="#proxs.LinRecombine" title="Permalink to this definition">¶</a></dt>
+<dd><p>Multiply eigenvectors and (factorized) weights.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="proxs.StarletThreshold">
+<em class="property">class </em><code class="descclassname">proxs.</code><code class="descname">StarletThreshold</code><span class="sig-paren">(</span><em>threshold</em>, <em>thresh_type='soft'</em><span class="sig-paren">)</span><a class="headerlink" href="#proxs.StarletThreshold" title="Permalink to this definition">¶</a></dt>
+<dd><p>Apply soft thresholding in Starlet domain.</p>
+<dl class="docutils">
+<dt>threshold: np.ndarray</dt>
+<dd>Threshold levels.</dd>
+<dt>thresh_type: str</dt>
+<dd>Whether soft- or hard-thresholding should be used. Default is <code class="docutils literal notranslate"><span class="pre">'soft'</span></code>.</dd>
+</dl>
+<dl class="method">
+<dt id="proxs.StarletThreshold.op">
+<code class="descname">op</code><span class="sig-paren">(</span><em>transf_data</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#proxs.StarletThreshold.op" title="Permalink to this definition">¶</a></dt>
+<dd><p>Applies Starlet transform and perform thresholding.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="grads.html" title="previous chapter">grads</a></li>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/proxs.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2019, Fred Ngolè-Mboula, Morgan A. Schmitz, Jean-Luc Starck.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.5</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.7</a>
+      
+      |
+      <a href="_sources/proxs.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

@@ -1,0 +1,193 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>RCA &#8212; RCA 2 documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="utils" href="utils.html" />
+    <link rel="prev" title="RCA" href="index.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-rca">
+<span id="rca"></span><h1>RCA<a class="headerlink" href="#module-rca" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="rca.RCA">
+<em class="property">class </em><code class="descclassname">rca.</code><code class="descname">RCA</code><span class="sig-paren">(</span><em>n_comp</em>, <em>upfact=1</em>, <em>ksig=3</em>, <em>n_scales=3</em>, <em>ksig_init=5</em>, <em>n_scales_init=2</em>, <em>verbose=2</em><span class="sig-paren">)</span><a class="headerlink" href="#rca.RCA" title="Permalink to this definition">¶</a></dt>
+<dd><p>Resolved Components Analysis.</p>
+<dl class="docutils">
+<dt>n_comp: int</dt>
+<dd>Number of components to learn.</dd>
+<dt>upfact: int</dt>
+<dd>Upsampling factor. Default is 1 (no superresolution).</dd>
+<dt>ksig: float</dt>
+<dd>Value of <span class="math notranslate nohighlight">\(k\)</span> for the thresholding in Starlet domain (taken to be 
+<span class="math notranslate nohighlight">\(k\sigma\)</span>, where <span class="math notranslate nohighlight">\(\sigma\)</span> is the estimated noise standard deviation.</dd>
+<dt>n_scales: int</dt>
+<dd>Number of Starlet scales to use for the sparsity constraint. Default is 3.</dd>
+<dt>ksig_init: float</dt>
+<dd>Similar to <code class="docutils literal notranslate"><span class="pre">ksig</span></code>, for use when estimating shifts and noise levels, as it might 
+be desirable to have it set higher than <code class="docutils literal notranslate"><span class="pre">ksig</span></code>. Unused if <code class="docutils literal notranslate"><span class="pre">shifts</span></code> are provided 
+when running <a class="reference internal" href="#rca.RCA.fit" title="rca.RCA.fit"><code class="xref py py-func docutils literal notranslate"><span class="pre">RCA.fit()</span></code></a>. Default is 5.</dd>
+<dt>n_scales_init: int</dt>
+<dd>Similar to <code class="docutils literal notranslate"><span class="pre">n_scales</span></code>, for use when estimating shifts and noise levels, as it might 
+be sufficient to use fewer scales when initializing. Unused if <code class="docutils literal notranslate"><span class="pre">sigs</span></code> are provided
+when running <a class="reference internal" href="#rca.RCA.fit" title="rca.RCA.fit"><code class="xref py py-func docutils literal notranslate"><span class="pre">RCA.fit()</span></code></a>. Default is 2.</dd>
+<dt>verbose: bool or int</dt>
+<dd>If True, will only output RCA-specific lines to stdout. If verbose is set to 2,
+will run ModOpt’s optimization algorithms in verbose mode.</dd>
+</dl>
+<dl class="method">
+<dt id="rca.RCA.estimate_psf">
+<code class="descname">estimate_psf</code><span class="sig-paren">(</span><em>test_pos</em>, <em>n_neighbors=15</em>, <em>rbf_function='thin_plate'</em><span class="sig-paren">)</span><a class="headerlink" href="#rca.RCA.estimate_psf" title="Permalink to this definition">¶</a></dt>
+<dd><p>Estimate and return PSF at desired positions.</p>
+<dl class="docutils">
+<dt>test_pos: np.ndarray</dt>
+<dd>Positions where the PSF should be estimated. Should be in the same format (units,
+etc.) as the <code class="docutils literal notranslate"><span class="pre">obs_pos</span></code> fed to <a class="reference internal" href="#rca.RCA.fit" title="rca.RCA.fit"><code class="xref py py-func docutils literal notranslate"><span class="pre">RCA.fit()</span></code></a>.</dd>
+<dt>n_neighbors: int</dt>
+<dd>Number of neighbors to use for RBF interpolation. Default is 15.</dd>
+<dt>rbf_function: str</dt>
+<dd>Type of RBF kernel to use. Default is <code class="docutils literal notranslate"><span class="pre">'thin_plate'</span></code>.</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="rca.RCA.fit">
+<code class="descname">fit</code><span class="sig-paren">(</span><em>obs_data</em>, <em>obs_pos</em>, <em>S=None</em>, <em>VT=None</em>, <em>alpha=None</em>, <em>shifts=None</em>, <em>sigs=None</em>, <em>psf_size=None</em>, <em>psf_size_type='fwhm'</em>, <em>flux=None</em>, <em>nb_iter=2</em>, <em>nb_subiter_S=300</em>, <em>nb_reweight=0</em>, <em>nb_subiter_weights=None</em>, <em>n_eigenvects=5</em>, <em>graph_kwargs={}</em><span class="sig-paren">)</span><a class="headerlink" href="#rca.RCA.fit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fits RCA to observed star field.</p>
+<dl class="docutils">
+<dt>obs_data: np.ndarray</dt>
+<dd>Observed data.</dd>
+<dt>obs_pos: np.ndarray</dt>
+<dd>Corresponding positions.</dd>
+<dt>S: np.ndarray</dt>
+<dd>First guess (or warm start) eigenPSFs <span class="math notranslate nohighlight">\(S\)</span>. Default is <code class="docutils literal notranslate"><span class="pre">None</span></code>.</dd>
+<dt>VT: np.ndarray</dt>
+<dd>Matrix of concatenated graph Laplacians. Default is <code class="docutils literal notranslate"><span class="pre">None</span></code>.</dd>
+<dt>alpha: np.ndarray</dt>
+<dd>First guess (or warm start) weights <span class="math notranslate nohighlight">\(\alpha\)</span>, after factorization by <code class="docutils literal notranslate"><span class="pre">VT</span></code>. Default is <code class="docutils literal notranslate"><span class="pre">None</span></code>.</dd>
+<dt>shifts: np.ndarray</dt>
+<dd>Corresponding sub-pixel shifts. Default is <code class="docutils literal notranslate"><span class="pre">None</span></code>; will be estimated from
+observed data if not provided.</dd>
+<dt>sigs: np.ndarray</dt>
+<dd>Estimated noise levels. Default is <code class="docutils literal notranslate"><span class="pre">None</span></code>; will be estimated from data
+if not provided.</dd>
+<dt>psf_size: float</dt>
+<dd>Approximate expected PSF size in pixels; will be used for the size of the Gaussian window for centroid estimation.
+<cite>psf_size_type</cite> determines the convention used for this size (default is FWHM).
+Ignored if <cite>shifts</cite> are provided. Default is Gaussian sigma of 7.5 pixels.</dd>
+<dt>psf_size_type: str</dt>
+<dd>Can be any of <cite>‘R2’</cite>, <cite>‘fwhm’</cite> or <cite>‘sigma’</cite>, for the size defined from quadrupole moments, full width at half maximum
+(e.g. from SExtractor) or 1-sigma width of the best matching 2D Gaussian. Default is <cite>‘fwhm’</cite>.</dd>
+<dt>flux: np.ndarray</dt>
+<dd>Flux levels. Default is <code class="docutils literal notranslate"><span class="pre">None</span></code>; will be estimated from data if not provided.</dd>
+<dt>nb_iter: int</dt>
+<dd>Number of overall iterations (i.e. of alternations). Note the weights do not
+get updated the last time around, so they actually get <code class="docutils literal notranslate"><span class="pre">nb_iter-1</span></code> updates.
+Default is 300.</dd>
+<dt>nb_subiter_S: int</dt>
+<dd>Maximum number of iterations for <span class="math notranslate nohighlight">\(S\)</span> updates. If ModOpt’s optimizers achieve 
+internal convergence, that number may (and often is) not reached. Default is
+300.</dd>
+<dt>nb_reweight: int </dt>
+<dd>Number of reweightings to apply during <span class="math notranslate nohighlight">\(S\)</span> updates. See equation (33) in RCA paper. 
+Default is 0.</dd>
+<dt>nb_subiter_weights: int</dt>
+<dd>Maximum number of iterations for <span class="math notranslate nohighlight">\(\alpha\)</span> updates. If ModOpt’s optimizers achieve 
+internal convergence, that number may (and often is) not reached. Default is None;
+if not provided, will be set to <code class="docutils literal notranslate"><span class="pre">2*nb_subiter_S</span></code> (as it was in RCA v1).</dd>
+<dt>n_eigenvects: int</dt>
+<dd>Maximum number of eigenvectors to consider per <span class="math notranslate nohighlight">\((e,a)\)</span> couple. Default is <code class="docutils literal notranslate"><span class="pre">None</span></code>;
+if not provided, <em>all</em> eigenvectors will be considered, which can lead to a poor
+selection of graphs, especially when data is undersampled. Ignored if <code class="docutils literal notranslate"><span class="pre">VT</span></code> and
+<code class="docutils literal notranslate"><span class="pre">alpha</span></code> are provided.</dd>
+<dt>graph_kwargs: dictionary</dt>
+<dd>List of optional kwargs to be passed on to the <a class="reference internal" href="utils.html#utils.GraphBuilder" title="utils.GraphBuilder"><code class="xref py py-func docutils literal notranslate"><span class="pre">utils.GraphBuilder()</span></code></a>.</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="rca.RCA.set_psf_size">
+<code class="descname">set_psf_size</code><span class="sig-paren">(</span><em>psf_size</em>, <em>psf_size_type</em><span class="sig-paren">)</span><a class="headerlink" href="#rca.RCA.set_psf_size" title="Permalink to this definition">¶</a></dt>
+<dd><p>Handles different “size” conventions.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="index.html" title="previous chapter">RCA</a></li>
+      <li>Next: <a href="utils.html" title="next chapter">utils</a></li>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/rca.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2019, Fred Ngolè-Mboula, Morgan A. Schmitz, Jean-Luc Starck.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.5</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.7</a>
+      
+      |
+      <a href="_sources/rca.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
