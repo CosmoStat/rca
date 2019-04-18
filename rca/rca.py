@@ -36,7 +36,7 @@ class RCA(object):
         will run ModOpt's optimization algorithms in verbose mode. 
         
     """
-    def __init__(self, n_comp, upfact=1, ksig=4, n_scales=3,
+    def __init__(self, n_comp, upfact=1, ksig=3, n_scales=3,
                  ksig_init=5, n_scales_init=2, verbose=2):
         self.n_comp = n_comp
         self.upfact = upfact
@@ -56,7 +56,7 @@ class RCA(object):
     def fit(self, obs_data, obs_pos, S=None, VT=None, alpha=None,
             shifts=None, sigs=None, psf_size=None, psf_size_type='fwhm',
             flux=None, nb_iter=2, nb_subiter_S=300, nb_reweight=0, 
-            nb_subiter_weights=None, n_eigenvects=None, graph_kwargs={}):
+            nb_subiter_weights=None, n_eigenvects=5, graph_kwargs={}):
         """ Fits RCA to observed star field.
         
         Parameters
