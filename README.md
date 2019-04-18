@@ -5,7 +5,7 @@ Resolved Component Analysis
 v2.0
 
 ## Description
-RCA is a PSF modelling python package. It enforces several constraints, notably some related to sparsity and spatial structure, to build a spatially-varying PSF model from observed, noisy and possibly undersampled star stamps.
+RCA is a PSF modelling python package. It enforces several constraints, notably some related to sparsity and spatial structure, to build a spatially-varying PSF model from observed, noisy and possibly undersampled star stamps. Some modicum of documentation can be found [here](https://morganschmitz.github.io/rca/) - see also [quick start](#quick-start) below.
 
 ## Requirements
 The following python packages are required:
@@ -35,7 +35,7 @@ rca_fitter.fit(stars, star_positions)
 # return PSF model at positions of interest
 psfs = rca_fitter.estimate_psf(galaxy_positions)
 ```
-A complete list of the parameters for `RCA` and its `fit` method can be found in the documentation. The main ones to take into account are:
+A complete list of the parameters for `RCA` and its `fit` method can be found in [the documentation](https://morganschmitz.github.io/rca/rca.html#module-rca). The main ones to take into account are:
 
   - RCA initialization:
     - `n_comp`, the number of eigenPSFs to learn ("r" in the papers)
