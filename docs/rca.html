@@ -59,7 +59,7 @@ will run ModOpt’s optimization algorithms in verbose mode.</dd>
 </dl>
 <dl class="method">
 <dt id="rca.RCA.estimate_psf">
-<code class="descname">estimate_psf</code><span class="sig-paren">(</span><em>test_pos</em>, <em>n_neighbors=15</em>, <em>rbf_function='thin_plate'</em><span class="sig-paren">)</span><a class="headerlink" href="#rca.RCA.estimate_psf" title="Permalink to this definition">¶</a></dt>
+<code class="descname">estimate_psf</code><span class="sig-paren">(</span><em>test_pos</em>, <em>n_neighbors=15</em>, <em>rbf_function='thin_plate'</em>, <em>apply_degradation=False</em>, <em>shifts=None</em>, <em>upfact=None</em>, <em>rca_format=False</em><span class="sig-paren">)</span><a class="headerlink" href="#rca.RCA.estimate_psf" title="Permalink to this definition">¶</a></dt>
 <dd><p>Estimate and return PSF at desired positions.</p>
 <dl class="docutils">
 <dt>test_pos: np.ndarray</dt>
@@ -69,6 +69,18 @@ etc.) as the <code class="docutils literal notranslate"><span class="pre">obs_po
 <dd>Number of neighbors to use for RBF interpolation. Default is 15.</dd>
 <dt>rbf_function: str</dt>
 <dd>Type of RBF kernel to use. Default is <code class="docutils literal notranslate"><span class="pre">'thin_plate'</span></code>.</dd>
+<dt>apply_degradation: bool</dt>
+<dd>Whether PSF model should be degraded (shifted and resampled on coarse grid), 
+for instance for comparison with stars. If True, expects shifts to be provided.
+Default is False.</dd>
+<dt>shifts: np.ndarray</dt>
+<dd>Intra-pixel shifts to apply if <cite>apply_degradation</cite> is set to True.</dd>
+<dt>upfact: int</dt>
+<dd>Upsampling factor; default is None, in which case that of the RCA instance will be used.</dd>
+<dt>rca_format: bool</dt>
+<dd>If True, returns the PSF model in “rca” format, i.e. with axises
+(n_pixels, n_pixels, n_stars). Otherwise, and by default, return them in
+“regular” format, (n_stars, n_pixels, n_pixels).</dd>
 </dl>
 </dd></dl>
 
