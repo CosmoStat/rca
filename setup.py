@@ -4,7 +4,7 @@ setup(
     name='rca',
     version='2.0',
     description='Resolved Component Analysis',
-    author='Morgan A. Schmitz, Fred Ngolè',
+    author='Morgan A. Schmitz, Fred Ngole',
     author_email='morgan.schmitz@cea.fr',
     url='https://github.com/CosmoStat/rca',
     packages=['rca'],

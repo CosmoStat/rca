@@ -16,6 +16,15 @@ The following python packages are required:
   
 You will also need a compiled version of the sparse2d module of [ISAP](http://www.cosmostat.org/software/isap); alternatively, you should be able to install [PySAP](https://github.com/CEA-COSMIC/pysap) and let it handle the compilation and installation of sparse2d.
 
+## Installation
+After installing all dependencies, RCA just needs to be cloned and python-installed:
+
+```
+git clone https://github.com/MorganSchmitz/rca.git
+cd rca
+python setup.py install
+```
+
 ## References
   - [Ngolè et al., 2016](https://arxiv.org/abs/1608.08104) - Inverse Problems, 32(12)
   - Schmitz et al., 2019 - forthcoming
