@@ -44,7 +44,7 @@ rca_fitter.fit(stars, star_positions)
 # return PSF model at positions of interest
 psfs = rca_fitter.estimate_psf(galaxy_positions)
 ```
-A complete list of the parameters for `RCA` and its `fit` method can be found in [the documentation](https://morganschmitz.github.io/rca/rca.html#module-rca). The main ones to take into account are:
+A complete list of the parameters for `RCA` and its `fit` and `estimate_psf` methods can be found in [the documentation](https://morganschmitz.github.io/rca/rca.html#module-rca). The main ones to take into account are:
 
   - RCA initialization:
     - `n_comp`, the number of eigenPSFs to learn ("r" in the papers)
@@ -53,6 +53,8 @@ A complete list of the parameters for `RCA` and its `fit` method can be found in
     - `obs_data` should contain your observed stars (see note below for formatting conventions)
     - `obs_pos`, their respective positions
     - either `shifts` (with their respective centroid shifts wrt. a common arbitrary grid) or, if they are to be estimated from the data, a rough estimation of the `psf_size` (for the window function - can be given in FWHM, R^2 or Gaussian sigma)
+  - `estimate_psf`:
+    - `test_pos`, the positions at which the PSF should be estimated
 
 The rest can largely be left to default values for basic usage.
 

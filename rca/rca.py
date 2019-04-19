@@ -168,7 +168,9 @@ the shifts will be estimated from the data using the default Gaussian
 window of 7.5 pixels.''')
             return 7.5
         
-    def estimate_psf(self, test_pos, n_neighbors=15, rbf_function='thin_plate'):
+    def estimate_psf(self, test_pos, n_neighbors=15, rbf_function='thin_plate', 
+                     apply_degradation=False, shifts=None, upfact=None,
+                     rca_format=False):
         """ Estimate and return PSF at desired positions.
         
         Parameters
@@ -180,10 +182,24 @@ window of 7.5 pixels.''')
             Number of neighbors to use for RBF interpolation. Default is 15.
         rbf_function: str
             Type of RBF kernel to use. Default is ``'thin_plate'``.
+        apply_degradation: bool
+            Whether PSF model should be degraded (shifted and resampled on coarse grid), 
+            for instance for comparison with stars. If True, expects shifts to be provided.
+            Default is False.
+        shifts: np.ndarray
+            Intra-pixel shifts to apply if `apply_degradation` is set to True.
+        upfact: int
+            Upsampling factor; default is None, in which case that of the RCA instance will be used.
+        rca_format: bool
+            If True, returns the PSF model in "rca" format, i.e. with axises
+            (n_pixels, n_pixels, n_stars). Otherwise, and by default, return them in
+            "regular" format, (n_stars, n_pixels, n_pixels).
         """
         if not self.is_fitted:
             raise ValueError('RCA instance has not yet been fitted to observations. Please run\
             the fit method.')
+        if upfact is None:
+            upfact = self.upfact
         ntest = test_pos.shape[0]
         test_weights = np.empty((self.n_comp, ntest))
         for j,pos in enumerate(test_pos):
@@ -193,7 +209,19 @@ window of 7.5 pixels.''')
             for i in range(self.n_comp):
                 rbfi = Rbf(pos_nbs[:,0], pos_nbs[:,1], nbs[:,i], function=rbf_function)
                 test_weights[i,j] = rbfi(pos[0], pos[1])
-        return self._transform(test_weights)
+        PSFs = self._transform(test_weights)
+        if apply_degradation:
+            shift_kernels, _ = utils.shift_ker_stack(shifts,self.upfact)
+            deg_PSFs = np.array([grads.degradation_op(PSFs[:,:,j], shift_kernels[:,:,j], upfact)
+                                 for j in range(ntest)])
+            if rca_format:
+                return utils.rca_format(deg_PSFs)
+            else:
+                return deg_PSFs
+        elif rca_format:
+            return PSFs
+        else:
+            return utils.reg_format(PSFs)
         
     def _initialize(self):
         """ Initialization tasks related to noise levels, shifts and flux. Note it includes
