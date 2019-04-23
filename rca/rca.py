@@ -55,7 +55,7 @@ class RCA(object):
         
     def fit(self, obs_data, obs_pos, S=None, VT=None, alpha=None,
             shifts=None, sigs=None, psf_size=None, psf_size_type='fwhm',
-            flux=None, nb_iter=2, nb_subiter_S=300, nb_reweight=0, 
+            flux=None, nb_iter=2, nb_subiter_S=200, nb_reweight=0, 
             nb_subiter_weights=None, n_eigenvects=5, graph_kwargs={}):
         """ Fits RCA to observed star field.
         
@@ -89,11 +89,11 @@ class RCA(object):
         nb_iter: int
             Number of overall iterations (i.e. of alternations). Note the weights do not
             get updated the last time around, so they actually get ``nb_iter-1`` updates.
-            Default is 300.
+            Default is 2.
         nb_subiter_S: int
             Maximum number of iterations for :math:`S` updates. If ModOpt's optimizers achieve 
             internal convergence, that number may (and often is) not reached. Default is
-            300.
+            200.
         nb_reweight: int 
             Number of reweightings to apply during :math:`S` updates. See equation (33) in RCA paper. 
             Default is 0.

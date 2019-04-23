@@ -86,7 +86,7 @@ Default is False.</dd>
 
 <dl class="method">
 <dt id="rca.RCA.fit">
-<code class="descname">fit</code><span class="sig-paren">(</span><em>obs_data</em>, <em>obs_pos</em>, <em>S=None</em>, <em>VT=None</em>, <em>alpha=None</em>, <em>shifts=None</em>, <em>sigs=None</em>, <em>psf_size=None</em>, <em>psf_size_type='fwhm'</em>, <em>flux=None</em>, <em>nb_iter=2</em>, <em>nb_subiter_S=300</em>, <em>nb_reweight=0</em>, <em>nb_subiter_weights=None</em>, <em>n_eigenvects=5</em>, <em>graph_kwargs={}</em><span class="sig-paren">)</span><a class="headerlink" href="#rca.RCA.fit" title="Permalink to this definition">¶</a></dt>
+<code class="descname">fit</code><span class="sig-paren">(</span><em>obs_data</em>, <em>obs_pos</em>, <em>S=None</em>, <em>VT=None</em>, <em>alpha=None</em>, <em>shifts=None</em>, <em>sigs=None</em>, <em>psf_size=None</em>, <em>psf_size_type='fwhm'</em>, <em>flux=None</em>, <em>nb_iter=2</em>, <em>nb_subiter_S=200</em>, <em>nb_reweight=0</em>, <em>nb_subiter_weights=None</em>, <em>n_eigenvects=5</em>, <em>graph_kwargs={}</em><span class="sig-paren">)</span><a class="headerlink" href="#rca.RCA.fit" title="Permalink to this definition">¶</a></dt>
 <dd><p>Fits RCA to observed star field.</p>
 <dl class="docutils">
 <dt>obs_data: np.ndarray</dt>
@@ -117,11 +117,11 @@ Ignored if <cite>shifts</cite> are provided. Default is Gaussian sigma of 7.5 pi
 <dt>nb_iter: int</dt>
 <dd>Number of overall iterations (i.e. of alternations). Note the weights do not
 get updated the last time around, so they actually get <code class="docutils literal notranslate"><span class="pre">nb_iter-1</span></code> updates.
-Default is 300.</dd>
+Default is 2.</dd>
 <dt>nb_subiter_S: int</dt>
 <dd>Maximum number of iterations for <span class="math notranslate nohighlight">\(S\)</span> updates. If ModOpt’s optimizers achieve 
 internal convergence, that number may (and often is) not reached. Default is
-300.</dd>
+200.</dd>
 <dt>nb_reweight: int </dt>
 <dd>Number of reweightings to apply during <span class="math notranslate nohighlight">\(S\)</span> updates. See equation (33) in RCA paper. 
 Default is 0.</dd>
