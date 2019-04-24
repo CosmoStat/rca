@@ -140,11 +140,35 @@ selection of graphs, especially when data is undersampled. Ignored if <code clas
 </dd></dl>
 
 <dl class="method">
+<dt id="rca.RCA.quicksave">
+<code class="descname">quicksave</code><span class="sig-paren">(</span><em>path</em><span class="sig-paren">)</span><a class="headerlink" href="#rca.RCA.quicksave" title="Permalink to this definition">¶</a></dt>
+<dd><p>Save fitted RCA model for later use. Ideally, you would probably want to store the
+whole RCA instance, though this might mean storing a lot of data you are not likely to
+use if you do not alter the fit that was already performed.
+Stored models can be loaded with <a class="reference internal" href="#rca.quickload" title="rca.quickload"><code class="xref py py-func docutils literal notranslate"><span class="pre">rca.quickload()</span></code></a>.</p>
+<dl class="docutils">
+<dt>path: str</dt>
+<dd>Path to where the fitted RCA model should be saved. The <code class="docutils literal notranslate"><span class="pre">.npy</span></code> extension will be
+added.</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
 <dt id="rca.RCA.set_psf_size">
 <code class="descname">set_psf_size</code><span class="sig-paren">(</span><em>psf_size</em>, <em>psf_size_type</em><span class="sig-paren">)</span><a class="headerlink" href="#rca.RCA.set_psf_size" title="Permalink to this definition">¶</a></dt>
 <dd><p>Handles different “size” conventions.</p>
 </dd></dl>
 
+</dd></dl>
+
+<dl class="function">
+<dt id="rca.quickload">
+<code class="descclassname">rca.</code><code class="descname">quickload</code><span class="sig-paren">(</span><em>path</em><span class="sig-paren">)</span><a class="headerlink" href="#rca.quickload" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load pre-fitted RCA model (saved with <a class="reference internal" href="#rca.RCA.quicksave" title="rca.RCA.quicksave"><code class="xref py py-func docutils literal notranslate"><span class="pre">RCA.quicksave()</span></code></a>).</p>
+<dl class="docutils">
+<dt>path: str</dt>
+<dd>Path to where the fitted RCA model was saved.</dd>
+</dl>
 </dd></dl>
 
 </div>

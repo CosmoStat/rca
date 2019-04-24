@@ -9,6 +9,23 @@ import grads
 from modopt.opt.reweight import cwbReweight
 from scipy.interpolate import Rbf
 
+def quickload(path):
+    """ Load pre-fitted RCA model (saved with :func:`RCA.quicksave`).
+    
+    Parameters
+    ----------
+    path: str
+        Path to where the fitted RCA model was saved.
+    """
+    RCA_params, fitted_model = np.load(path+'.npy')
+    loaded_rca = RCA(**RCA_params)
+    loaded_rca.obs_pos = fitted_model['obs_pos']
+    loaded_rca.weights = fitted_model['weights']
+    loaded_rca.S = fitted_model['S']
+    loaded_rca.flux_ref = fitted_model['flux_ref']
+    loaded_rca.is_fitted = True
+    return loaded_rca
+
 class RCA(object):
     """ Resolved Components Analysis.
     
@@ -167,6 +184,27 @@ class RCA(object):
 the shifts will be estimated from the data using the default Gaussian
 window of 7.5 pixels.''')
             return 7.5
+            
+    def quicksave(self, path):
+        """ Save fitted RCA model for later use. Ideally, you would probably want to store the
+        whole RCA instance, though this might mean storing a lot of data you are not likely to
+        use if you do not alter the fit that was already performed.
+        Stored models can be loaded with :func:`rca.quickload`.
+        
+        Parameters
+        ----------
+        path: str
+            Path to where the fitted RCA model should be saved. The ``.npy`` extension will be
+            added.
+        """
+        if not self.is_fitted:
+            raise ValueError('RCA instance has not yet been fitted to observations. Please run\
+            the fit method.')
+        RCA_params = {'n_comp': self.n_comp, 'upfact': self.upfact}
+        fitted_model = {'obs_pos': self.obs_pos, 'weights': self.weights, 'S': self.S,
+                        'flux_ref': self.flux_ref}
+        np.save(path+'.npy', [RCA_params,fitted_model])
+        
         
     def estimate_psf(self, test_pos, n_neighbors=15, rbf_function='thin_plate', 
                      apply_degradation=False, shifts=None, upfact=None,
