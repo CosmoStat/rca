@@ -42,7 +42,7 @@
 <dd>Upsampling factor. Default is 1 (no superresolution).</dd>
 <dt>ksig: float</dt>
 <dd>Value of <span class="math notranslate nohighlight">\(k\)</span> for the thresholding in Starlet domain (taken to be 
-<span class="math notranslate nohighlight">\(k\sigma\)</span>, where <span class="math notranslate nohighlight">\(\sigma\)</span> is the estimated noise standard deviation.</dd>
+<span class="math notranslate nohighlight">\(k\sigma\)</span>, where <span class="math notranslate nohighlight">\(\sigma\)</span> is the estimated noise standard deviation.)</dd>
 <dt>n_scales: int</dt>
 <dd>Number of Starlet scales to use for the sparsity constraint. Default is 3.</dd>
 <dt>ksig_init: float</dt>
@@ -59,7 +59,7 @@ will run ModOpt’s optimization algorithms in verbose mode.</dd>
 </dl>
 <dl class="method">
 <dt id="rca.RCA.estimate_psf">
-<code class="descname">estimate_psf</code><span class="sig-paren">(</span><em>test_pos</em>, <em>n_neighbors=15</em>, <em>rbf_function='thin_plate'</em>, <em>apply_degradation=False</em>, <em>shifts=None</em>, <em>upfact=None</em>, <em>rca_format=False</em><span class="sig-paren">)</span><a class="headerlink" href="#rca.RCA.estimate_psf" title="Permalink to this definition">¶</a></dt>
+<code class="descname">estimate_psf</code><span class="sig-paren">(</span><em>test_pos</em>, <em>n_neighbors=15</em>, <em>rbf_function='thin_plate'</em>, <em>apply_degradation=False</em>, <em>shifts=None</em>, <em>flux=None</em>, <em>upfact=None</em>, <em>rca_format=False</em><span class="sig-paren">)</span><a class="headerlink" href="#rca.RCA.estimate_psf" title="Permalink to this definition">¶</a></dt>
 <dd><p>Estimate and return PSF at desired positions.</p>
 <dl class="docutils">
 <dt>test_pos: np.ndarray</dt>
@@ -74,7 +74,10 @@ etc.) as the <code class="docutils literal notranslate"><span class="pre">obs_po
 for instance for comparison with stars. If True, expects shifts to be provided.
 Default is False.</dd>
 <dt>shifts: np.ndarray</dt>
-<dd>Intra-pixel shifts to apply if <cite>apply_degradation</cite> is set to True.</dd>
+<dd>Intra-pixel shifts to apply if <code class="docutils literal notranslate"><span class="pre">apply_degradation</span></code> is set to True.</dd>
+<dt>flux: np.ndarray</dt>
+<dd>Flux levels by which reconstructed PSF will be multiplied if provided. For comparison with 
+stars if <code class="docutils literal notranslate"><span class="pre">apply_degradation</span></code> is set to True.</dd>
 <dt>upfact: int</dt>
 <dd>Upsampling factor; default is None, in which case that of the RCA instance will be used.</dd>
 <dt>rca_format: bool</dt>
@@ -107,11 +110,11 @@ observed data if not provided.</dd>
 if not provided.</dd>
 <dt>psf_size: float</dt>
 <dd>Approximate expected PSF size in pixels; will be used for the size of the Gaussian window for centroid estimation.
-<cite>psf_size_type</cite> determines the convention used for this size (default is FWHM).
-Ignored if <cite>shifts</cite> are provided. Default is Gaussian sigma of 7.5 pixels.</dd>
+<code class="docutils literal notranslate"><span class="pre">psf_size_type</span></code> determines the convention used for this size (default is FWHM).
+Ignored if <code class="docutils literal notranslate"><span class="pre">shifts</span></code> are provided. Default is Gaussian sigma of 7.5 pixels.</dd>
 <dt>psf_size_type: str</dt>
-<dd>Can be any of <cite>‘R2’</cite>, <cite>‘fwhm’</cite> or <cite>‘sigma’</cite>, for the size defined from quadrupole moments, full width at half maximum
-(e.g. from SExtractor) or 1-sigma width of the best matching 2D Gaussian. Default is <cite>‘fwhm’</cite>.</dd>
+<dd>Can be any of <code class="docutils literal notranslate"><span class="pre">'R2'</span></code>, <code class="docutils literal notranslate"><span class="pre">'fwhm'</span></code> or <code class="docutils literal notranslate"><span class="pre">'sigma'</span></code>, for the size defined from quadrupole moments, full width at half maximum
+(e.g. from SExtractor) or 1-sigma width of the best matching 2D Gaussian. Default is <code class="docutils literal notranslate"><span class="pre">'fwhm'</span></code>.</dd>
 <dt>flux: np.ndarray</dt>
 <dd>Flux levels. Default is <code class="docutils literal notranslate"><span class="pre">None</span></code>; will be estimated from data if not provided.</dd>
 <dt>nb_iter: int</dt>

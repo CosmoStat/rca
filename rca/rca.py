@@ -37,7 +37,7 @@ class RCA(object):
         Upsampling factor. Default is 1 (no superresolution).
     ksig: float
         Value of :math:`k` for the thresholding in Starlet domain (taken to be 
-        :math:`k\sigma`, where :math:`\sigma` is the estimated noise standard deviation.
+        :math:`k\sigma`, where :math:`\sigma` is the estimated noise standard deviation.)
     n_scales: int
         Number of Starlet scales to use for the sparsity constraint. Default is 3.
     ksig_init: float
@@ -96,11 +96,11 @@ class RCA(object):
             if not provided.
         psf_size: float
             Approximate expected PSF size in pixels; will be used for the size of the Gaussian window for centroid estimation.
-            `psf_size_type` determines the convention used for this size (default is FWHM).
-            Ignored if `shifts` are provided. Default is Gaussian sigma of 7.5 pixels.
+            ``psf_size_type`` determines the convention used for this size (default is FWHM).
+            Ignored if ``shifts`` are provided. Default is Gaussian sigma of 7.5 pixels.
         psf_size_type: str
-            Can be any of `'R2'`, `'fwhm'` or `'sigma'`, for the size defined from quadrupole moments, full width at half maximum
-            (e.g. from SExtractor) or 1-sigma width of the best matching 2D Gaussian. Default is `'fwhm'`.
+            Can be any of ``'R2'``, ``'fwhm'`` or ``'sigma'``, for the size defined from quadrupole moments, full width at half maximum
+            (e.g. from SExtractor) or 1-sigma width of the best matching 2D Gaussian. Default is ``'fwhm'``.
         flux: np.ndarray
             Flux levels. Default is ``None``; will be estimated from data if not provided.
         nb_iter: int
@@ -207,8 +207,8 @@ window of 7.5 pixels.''')
         
         
     def estimate_psf(self, test_pos, n_neighbors=15, rbf_function='thin_plate', 
-                     apply_degradation=False, shifts=None, upfact=None,
-                     rca_format=False):
+                     apply_degradation=False, shifts=None, flux=None,
+                     upfact=None, rca_format=False):
         """ Estimate and return PSF at desired positions.
         
         Parameters
@@ -225,7 +225,10 @@ window of 7.5 pixels.''')
             for instance for comparison with stars. If True, expects shifts to be provided.
             Default is False.
         shifts: np.ndarray
-            Intra-pixel shifts to apply if `apply_degradation` is set to True.
+            Intra-pixel shifts to apply if ``apply_degradation`` is set to True.
+        flux: np.ndarray
+            Flux levels by which reconstructed PSF will be multiplied if provided. For comparison with 
+            stars if ``apply_degradation`` is set to True. 
         upfact: int
             Upsampling factor; default is None, in which case that of the RCA instance will be used.
         rca_format: bool
@@ -252,6 +255,8 @@ window of 7.5 pixels.''')
             shift_kernels, _ = utils.shift_ker_stack(shifts,self.upfact)
             deg_PSFs = np.array([grads.degradation_op(PSFs[:,:,j], shift_kernels[:,:,j], upfact)
                                  for j in range(ntest)])
+            if flux is not None:
+                deg_PSFs *= flux.reshape(-1,1,1) / self.flux_ref
             if rca_format:
                 return utils.rca_format(deg_PSFs)
             else:
