@@ -20,7 +20,7 @@ def quickload(path):
     RCA_params, fitted_model = np.load(path+'.npy')
     loaded_rca = RCA(**RCA_params)
     loaded_rca.obs_pos = fitted_model['obs_pos']
-    loaded_rca.weights = fitted_model['weights']
+    loaded_rca.A = fitted_model['A']
     loaded_rca.S = fitted_model['S']
     loaded_rca.flux_ref = fitted_model['flux_ref']
     loaded_rca.is_fitted = True
@@ -139,7 +139,7 @@ class RCA(object):
         self.alpha = alpha
         self.shifts = shifts
         if shifts is None:
-            self.psf_size = self.set_psf_size(psf_size, psf_size_type)
+            self.psf_size = self._set_psf_size(psf_size, psf_size_type)
         self.sigs = sigs
         self.flux = flux
         self.nb_iter = nb_iter
@@ -163,27 +163,10 @@ class RCA(object):
             if self.verbose:
                 print '... Done.'
         else:
-            self.weights = self.alpha.dot(self.VT)
+            self.A = self.alpha.dot(self.VT)
         self._fit()
         self.is_fitted = True
-        return self.S, self.weights
-        
-    def set_psf_size(self, psf_size, psf_size_type):
-        """ Handles different "size" conventions."""
-        if psf_size is not None:
-            if psf_size_type == 'fwhm':
-                return psf_size / (2*np.sqrt(2*np.log(2)))
-            elif psf_size_type == 'R2':
-                return np.sqrt(psf_size / 2)
-            elif psf_size_type == 'sigma':
-                return psf_size
-            else:
-                raise ValueError('psf_size_type should be one of "fwhm", "R2" or "sigma"')
-        else:
-            print('''WARNING: neither shifts nor an estimated PSF size were provided to RCA;
-the shifts will be estimated from the data using the default Gaussian
-window of 7.5 pixels.''')
-            return 7.5
+        return self.S, self.A
             
     def quicksave(self, path):
         """ Save fitted RCA model for later use. Ideally, you would probably want to store the
@@ -201,7 +184,7 @@ window of 7.5 pixels.''')
             raise ValueError('RCA instance has not yet been fitted to observations. Please run\
             the fit method.')
         RCA_params = {'n_comp': self.n_comp, 'upfact': self.upfact}
-        fitted_model = {'obs_pos': self.obs_pos, 'weights': self.weights, 'S': self.S,
+        fitted_model = {'obs_pos': self.obs_pos, 'A': self.A, 'S': self.S,
                         'flux_ref': self.flux_ref}
         np.save(path+'.npy', [RCA_params,fitted_model])
         
@@ -245,7 +228,7 @@ window of 7.5 pixels.''')
         test_weights = np.empty((self.n_comp, ntest))
         for j,pos in enumerate(test_pos):
             # determine neighbors
-            nbs, pos_nbs = utils.return_neighbors(pos, self.obs_pos, self.weights.T, n_neighbors)
+            nbs, pos_nbs = utils.return_neighbors(pos, self.obs_pos, self.A.T, n_neighbors)
             # train RBF and interpolate for each component
             for i in range(self.n_comp):
                 rbfi = Rbf(pos_nbs[:,0], pos_nbs[:,1], nbs[:,i], function=rbf_function)
@@ -266,6 +249,23 @@ window of 7.5 pixels.''')
         else:
             return utils.reg_format(PSFs)
         
+    def _set_psf_size(self, psf_size, psf_size_type):
+        """ Handles different "size" conventions."""
+        if psf_size is not None:
+            if psf_size_type == 'fwhm':
+                return psf_size / (2*np.sqrt(2*np.log(2)))
+            elif psf_size_type == 'R2':
+                return np.sqrt(psf_size / 2)
+            elif psf_size_type == 'sigma':
+                return psf_size
+            else:
+                raise ValueError('psf_size_type should be one of "fwhm", "R2" or "sigma"')
+        else:
+            print('''WARNING: neither shifts nor an estimated PSF size were provided to RCA;
+the shifts will be estimated from the data using the default Gaussian
+window of 7.5 pixels.''')
+            return 7.5
+  
     def _initialize(self):
         """ Initialization tasks related to noise levels, shifts and flux. Note it includes
         renormalizing observed data, so needs to be ran even if all three are provided."""
@@ -304,10 +304,10 @@ window of 7.5 pixels.''')
                                   **self.graph_kwargs)
         self.VT, self.alpha, self.distances = gber.VT, gber.alpha, gber.distances
         self.sel_e, self.sel_a = gber.sel_e, gber.sel_a
-        self.weights = self.alpha.dot(self.VT)
+        self.A = self.alpha.dot(self.VT)
         
     def _fit(self):
-        weights = self.weights
+        weights = self.A
         comp = self.S
         alpha = self.alpha
         #### Source updates set-up ####
@@ -342,7 +342,7 @@ window of 7.5 pixels.''')
         
 
         for k in range(self.nb_iter):
-            " ============================== Sources estimation =============================== "
+            #### Eigenpsf update ####
             # update gradient instance with new weights...
             source_grad.update_A(weights)
             
@@ -351,7 +351,6 @@ window of 7.5 pixels.''')
             
             # ... set optimization parameters...
             beta = source_grad.spec_rad + rho_phi
-            #beta = 0.6563937030792308 + rho_phi
             tau = 1./beta
             sigma = 1./lin_recombine.norm * beta/2
 
@@ -387,7 +386,7 @@ window of 7.5 pixels.''')
             ind_select = range(comp.shape[2])
 
 
-            " ============================== Weights estimation =============================== "
+            #### Weight update ####
             if k < self.nb_iter-1: 
                 # update sources and reset iteration counter for K-thresholding
                 weight_grad.update_S(comp)
@@ -407,11 +406,11 @@ window of 7.5 pixels.''')
                 weights = weights_k[ind_select,:]
                 supports = None #TODO
     
-        self.weights = weights
+        self.A = weights
         self.S = comp
         self.alpha = alpha
         source_grad.MX(transf_comp)
         self.current_rec = source_grad._current_rec
 
-    def _transform(self, weights):
-        return self.S.dot(weights)
+    def _transform(self, A):
+        return self.S.dot(A)
