@@ -70,7 +70,7 @@ class RCA(object):
             self.modopt_verb = False
         self.is_fitted = False
         
-    def fit(self, obs_data, obs_pos, S=None, VT=None, alpha=None,
+    def fit(self, obs_data, obs_pos, obs_weights=None, S=None, VT=None, alpha=None,
             shifts=None, sigs=None, psf_size=None, psf_size_type='fwhm',
             flux=None, nb_iter=2, nb_subiter_S=200, nb_reweight=0, 
             nb_subiter_weights=None, n_eigenvects=5, graph_kwargs={}):
@@ -82,6 +82,11 @@ class RCA(object):
             Observed data.
         obs_pos: np.ndarray
             Corresponding positions.
+        obs_weights: np.ndarray
+            Corresponding weights. Can be either one per observed star, or contain pixel-wise values. Masks can be
+            handled via binary weights. Default is None (in which case no weights are applied). Note if fluxes and
+            shifts are not provided, weights will be ignored for their estimation. Noise level estimation only removes 
+            bad pixels (with weight strictly equal to 0) and otherwise ignores weights.
         S: np.ndarray
             First guess (or warm start) eigenPSFs :math:`S`. Default is ``None``.
         VT: np.ndarray
@@ -131,6 +136,16 @@ class RCA(object):
         self.shap = self.obs_data.shape
         self.im_hr_shape = (self.upfact*self.shap[0],self.upfact*self.shap[1],self.shap[2])
         self.obs_pos = obs_pos
+        if obs_weights is None:
+            self.obs_weights = np.ones(self.shap) #/ self.shap[2]
+        elif obs_weights.shape == self.shap:
+            self.obs_weights = obs_weights / np.expand_dims(np.sum(obs_weights,axis=2), 2) * self.shap[2]
+        elif obs_weights.shape == (self.shap[2],):
+            self.obs_weights = obs_weights.reshape(1,1,-1) / np.sum(obs_weights) * self.shap[2]
+        else:
+            raise ValueError(
+            'Shape mismatch; weights should be of shape {} (for per-pixel weights) or {} (per-observation)'.format(
+                             self.shap, self.shap[2:]))
         if S is None:
             self.S = np.zeros(self.im_hr_shape[:2] + (self.n_comp,))
         else:
@@ -273,7 +288,8 @@ window of 7.5 pixels.''')
         # noise levels
         if self.sigs is None:
             transf_data = rca_prox.apply_transform(self.obs_data, self.init_filters)
-            sigmads = np.array([1.4826*utils.mad(fs[0]) for fs in transf_data])
+            sigmads = np.array([1.4826*utils.mad(fs[0],w) for fs,w in zip(transf_data,
+                                                      utils.reg_format(self.obs_weights))])
             self.sigs = sigmads / np.linalg.norm(self.init_filters[0])
         else:
             self.sigs = np.copy(self.sigs)
@@ -299,7 +315,7 @@ window of 7.5 pixels.''')
         self.obs_data /= self.sigs.reshape(1,1,-1)
     
     def _initialize_graph_constraint(self):
-        gber = utils.GraphBuilder(self.obs_data, self.obs_pos, self.n_comp, 
+        gber = utils.GraphBuilder(self.obs_data, self.obs_pos, self.obs_weights, self.n_comp, 
                                   n_eigenvects=self.n_eigenvects, verbose=self.verbose,
                                   **self.graph_kwargs)
         self.VT, self.alpha, self.distances = gber.VT, gber.alpha, gber.distances
@@ -317,7 +333,7 @@ window of 7.5 pixels.''')
         rho_phi = np.sqrt(np.sum(np.sum(np.abs(self.starlet_filters),axis=(1,2))**2))
         
         # Set up source updates, starting with the gradient
-        source_grad = grads.SourceGrad(self.obs_data, weights, self.flux, self.sigs, 
+        source_grad = grads.SourceGrad(self.obs_data, self.obs_weights, weights, self.flux, self.sigs, 
                                       self.shift_ker_stack, self.shift_ker_stack_adj, 
                                       self.upfact, self.starlet_filters)
 
@@ -329,7 +345,7 @@ window of 7.5 pixels.''')
 
         #### Weight updates set-up ####
         # gradient
-        weight_grad = grads.CoeffGrad(self.obs_data, comp, self.VT, self.flux, self.sigs, 
+        weight_grad = grads.CoeffGrad(self.obs_data, self.obs_weights, comp, self.VT, self.flux, self.sigs, 
                                       self.shift_ker_stack, self.shift_ker_stack_adj, self.upfact)
         
         # cost function

@@ -89,13 +89,18 @@ stars if <code class="docutils literal notranslate"><span class="pre">apply_degr
 
 <dl class="method">
 <dt id="rca.RCA.fit">
-<code class="descname">fit</code><span class="sig-paren">(</span><em>obs_data</em>, <em>obs_pos</em>, <em>S=None</em>, <em>VT=None</em>, <em>alpha=None</em>, <em>shifts=None</em>, <em>sigs=None</em>, <em>psf_size=None</em>, <em>psf_size_type='fwhm'</em>, <em>flux=None</em>, <em>nb_iter=2</em>, <em>nb_subiter_S=200</em>, <em>nb_reweight=0</em>, <em>nb_subiter_weights=None</em>, <em>n_eigenvects=5</em>, <em>graph_kwargs={}</em><span class="sig-paren">)</span><a class="headerlink" href="#rca.RCA.fit" title="Permalink to this definition">¶</a></dt>
+<code class="descname">fit</code><span class="sig-paren">(</span><em>obs_data</em>, <em>obs_pos</em>, <em>obs_weights=None</em>, <em>S=None</em>, <em>VT=None</em>, <em>alpha=None</em>, <em>shifts=None</em>, <em>sigs=None</em>, <em>psf_size=None</em>, <em>psf_size_type='fwhm'</em>, <em>flux=None</em>, <em>nb_iter=2</em>, <em>nb_subiter_S=200</em>, <em>nb_reweight=0</em>, <em>nb_subiter_weights=None</em>, <em>n_eigenvects=5</em>, <em>graph_kwargs={}</em><span class="sig-paren">)</span><a class="headerlink" href="#rca.RCA.fit" title="Permalink to this definition">¶</a></dt>
 <dd><p>Fits RCA to observed star field.</p>
 <dl class="docutils">
 <dt>obs_data: np.ndarray</dt>
 <dd>Observed data.</dd>
 <dt>obs_pos: np.ndarray</dt>
 <dd>Corresponding positions.</dd>
+<dt>obs_weights: np.ndarray</dt>
+<dd>Corresponding weights. Can be either one per observed star, or contain pixel-wise values. Masks can be
+handled via binary weights. Default is None (in which case no weights are applied). Note if fluxes and
+shifts are not provided, weights will be ignored for their estimation. Noise level estimation only removes 
+bad pixels (with weight strictly equal to 0) and otherwise ignores weights.</dd>
 <dt>S: np.ndarray</dt>
 <dd>First guess (or warm start) eigenPSFs <span class="math notranslate nohighlight">\(S\)</span>. Default is <code class="docutils literal notranslate"><span class="pre">None</span></code>.</dd>
 <dt>VT: np.ndarray</dt>
@@ -154,12 +159,6 @@ Stored models can be loaded with <a class="reference internal" href="#rca.quickl
 <dd>Path to where the fitted RCA model should be saved. The <code class="docutils literal notranslate"><span class="pre">.npy</span></code> extension will be
 added.</dd>
 </dl>
-</dd></dl>
-
-<dl class="method">
-<dt id="rca.RCA.set_psf_size">
-<code class="descname">set_psf_size</code><span class="sig-paren">(</span><em>psf_size</em>, <em>psf_size_type</em><span class="sig-paren">)</span><a class="headerlink" href="#rca.RCA.set_psf_size" title="Permalink to this definition">¶</a></dt>
-<dd><p>Handles different “size” conventions.</p>
 </dd></dl>
 
 </dd></dl>

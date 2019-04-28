@@ -151,10 +151,14 @@ def lineskthresholding(mat,k):
         mat_out[j,:] = kthresholding(mat[j,:],k)
     return mat_out
 
-def mad(x):
+def mad(x, weight=None):
     """Computes MAD.
     """
-    return np.median(np.abs(x-np.median(x)))
+    if weight is not None:
+        valid_pixels = x[weight>0]
+    else:
+        valid_pixels = x
+    return np.median(np.abs(valid_pixels-np.median(valid_pixels)))
 
 def lanczos(U,n=10,n2=None):
     """Generate Lanczos kernel for a given shift.
@@ -257,7 +261,7 @@ def gen_Pea(distances, e, a):
         Pea[i,i] = a*(np.sum(-1.*Pea[i]) - 1.)
     return Pea
     
-def select_vstar(eigenvects, R):
+def select_vstar(eigenvects, R, weights):
     """  Pick best eigenvector from a set of :math:`(e,a)`, i.e., solve (35) from RCA paper.
     
     Parameters
@@ -267,12 +271,15 @@ def select_vstar(eigenvects, R):
     
     R: np.ndarray
         :math:`R_i` matrix.
+        
+    weights: np.ndarray
+        Entry-wise weights for :math:`R_i`.
     """
-    loss = np.sum(R**2)
+    loss = np.sum((weights*R)**2)
     for i,Pea_eigenvects in enumerate(eigenvects):
         for j,vect in enumerate(Pea_eigenvects):
             colvect = np.copy(vect).reshape(1,-1)
-            current_loss = np.sum((R - colvect.T.dot(colvect.dot(R)))**2)
+            current_loss = np.sum(weights*(R - colvect.T.dot(colvect.dot(R)))**2)
             if current_loss < loss:
                 loss = current_loss
                 eigen_idx = j
@@ -291,6 +298,8 @@ class GraphBuilder(object):
         Observed data.
     obs_pos: np.ndarray
         Corresponding positions.
+    obs_weights: np.ndarray
+        Corresponding per-pixel weights.
     n_comp: int
         Number of RCA components.
     n_eigenvects: int
@@ -308,10 +317,14 @@ class GraphBuilder(object):
     auto_run: bool
         Whether to immediately build the graph quantities. Default is ``True``.
     """
-    def __init__(self, obs_data, obs_pos, n_comp, n_eigenvects=None, n_iter=3,
+    def __init__(self, obs_data, obs_pos, obs_weights, n_comp, n_eigenvects=None, n_iter=3,
                  ea_gridsize=10, distances=None, auto_run=True, verbose=True):
         self.obs_data = obs_data
+        shap = self.obs_data.shape
         self.obs_pos = obs_pos
+        self.obs_weights = obs_weights
+        # change to same format as that we will use for residual matrix R later on
+        self.obs_weights = np.transpose(self.obs_weights.reshape((shap[0]*shap[1],shap[2])))
         self.n_comp = n_comp
         if n_eigenvects is None:
             self.n_eigenvects = self.obs_data.shape[2]
@@ -389,14 +402,14 @@ class GraphBuilder(object):
             Peas = np.array([gen_Pea(self.distances, e, current_a) 
                                                    for e in e_range])
             all_eigenvects = np.array([self.gen_eigenvects(Pea) for Pea in Peas])
-            ea_idx, eigen_idx, _ = select_vstar(all_eigenvects, R)
+            ea_idx, eigen_idx, _ = select_vstar(all_eigenvects, R, self.obs_weights)
             current_e = e_range[ea_idx]
             
             # optimize over a
             Peas = np.array([gen_Pea(self.distances, current_e, a) 
                                                    for a in a_range])
             all_eigenvects = np.array([self.gen_eigenvects(Pea) for Pea in Peas])
-            ea_idx, eigen_idx, best_VT = select_vstar(all_eigenvects, R)
+            ea_idx, eigen_idx, best_VT = select_vstar(all_eigenvects, R, self.obs_weights)
             current_a = a_range[ea_idx]
 
         return current_e, current_a, eigen_idx, best_VT

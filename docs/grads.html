@@ -33,11 +33,13 @@
 <span id="grads"></span><h1>grads<a class="headerlink" href="#module-grads" title="Permalink to this headline">¶</a></h1>
 <dl class="class">
 <dt id="grads.CoeffGrad">
-<em class="property">class </em><code class="descclassname">grads.</code><code class="descname">CoeffGrad</code><span class="sig-paren">(</span><em>data</em>, <em>S</em>, <em>VT</em>, <em>flux</em>, <em>sig</em>, <em>ker</em>, <em>ker_rot</em>, <em>D</em>, <em>data_type='float'</em><span class="sig-paren">)</span><a class="headerlink" href="#grads.CoeffGrad" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">grads.</code><code class="descname">CoeffGrad</code><span class="sig-paren">(</span><em>data</em>, <em>weights</em>, <em>S</em>, <em>VT</em>, <em>flux</em>, <em>sig</em>, <em>ker</em>, <em>ker_rot</em>, <em>D</em>, <em>data_type='float'</em><span class="sig-paren">)</span><a class="headerlink" href="#grads.CoeffGrad" title="Permalink to this definition">¶</a></dt>
 <dd><p>Gradient class for the coefficient update.</p>
 <dl class="docutils">
 <dt>data: np.ndarray</dt>
 <dd>Observed data.</dd>
+<dt>weights: np.ndarray</dt>
+<dd>Corresponding pixel-wise weights.</dd>
 <dt>S: np.ndarray</dt>
 <dd>Current eigenPSFs <span class="math notranslate nohighlight">\(S\)</span>.</dd>
 <dt>VT: np.ndarray</dt>
@@ -59,7 +61,7 @@
 <dd><p>Apply degradation operator and renormalize.</p>
 <dl class="docutils">
 <dt>alpha: np.ndarray</dt>
-<dd>Current weights (after factorization by <span class="math notranslate nohighlight">\(V^\top\)</span>).</dd>
+<dd>Current coefficients (after factorization by <span class="math notranslate nohighlight">\(V^\top\)</span>).</dd>
 </dl>
 </dd></dl>
 
@@ -96,11 +98,13 @@ can feed the dual variable.)</p>
 
 <dl class="class">
 <dt id="grads.SourceGrad">
-<em class="property">class </em><code class="descclassname">grads.</code><code class="descname">SourceGrad</code><span class="sig-paren">(</span><em>data</em>, <em>A</em>, <em>flux</em>, <em>sig</em>, <em>ker</em>, <em>ker_rot</em>, <em>D</em>, <em>filters</em>, <em>data_type='float'</em><span class="sig-paren">)</span><a class="headerlink" href="#grads.SourceGrad" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">grads.</code><code class="descname">SourceGrad</code><span class="sig-paren">(</span><em>data</em>, <em>weights</em>, <em>A</em>, <em>flux</em>, <em>sig</em>, <em>ker</em>, <em>ker_rot</em>, <em>D</em>, <em>filters</em>, <em>data_type='float'</em><span class="sig-paren">)</span><a class="headerlink" href="#grads.SourceGrad" title="Permalink to this definition">¶</a></dt>
 <dd><p>Gradient class for the eigenPSF update.</p>
 <dl class="docutils">
 <dt>data: np.ndarray</dt>
 <dd>Input data array, a array of 2D observed images (i.e. with noise).</dd>
+<dt>weights: np.ndarray</dt>
+<dd>Corresponding pixel-wise weights.</dd>
 <dt>A: np.ndarray</dt>
 <dd>Current estimation of corresponding coefficients.</dd>
 <dt>flux: np.ndarray</dt>
@@ -149,7 +153,7 @@ can feed the dual variable.)</p>
 <dl class="method">
 <dt id="grads.SourceGrad.update_A">
 <code class="descname">update_A</code><span class="sig-paren">(</span><em>new_A</em>, <em>update_spectral_radius=True</em><span class="sig-paren">)</span><a class="headerlink" href="#grads.SourceGrad.update_A" title="Permalink to this definition">¶</a></dt>
-<dd><p>Update current weights.</p>
+<dd><p>Update current coefficients.</p>
 </dd></dl>
 
 </dd></dl>

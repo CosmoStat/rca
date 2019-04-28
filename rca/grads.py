@@ -22,6 +22,8 @@ class CoeffGrad(GradParent, PowerMethod):
     ----------
     data: np.ndarray
         Observed data.
+    weights: np.ndarray
+        Corresponding pixel-wise weights.
     S: np.ndarray
         Current eigenPSFs :math:`S`.
     VT: np.ndarray
@@ -37,9 +39,10 @@ class CoeffGrad(GradParent, PowerMethod):
     D: float
         Upsampling factor.
     """
-    def __init__(self, data, S, VT, flux, sig, ker, ker_rot, D, data_type='float'):
+    def __init__(self, data, weights, S, VT, flux, sig, ker, ker_rot, D, data_type='float'):
         self._grad_data_type = data_type
         self.obs_data = data
+        self.obs_weights = weights
         self.op = self.MX 
         self.trans_op = self.MtX 
         self.VT = VT
@@ -72,7 +75,7 @@ class CoeffGrad(GradParent, PowerMethod):
         Parameters
         ----------
         alpha: np.ndarray
-            Current weights (after factorization by :math:`V^\\top`).
+            Current coefficients (after factorization by :math:`V^\\top`).
         """
         A = alpha.dot(self.VT) 
         dec_rec = np.empty(self.obs_data.shape)
@@ -99,14 +102,14 @@ class CoeffGrad(GradParent, PowerMethod):
         """
         if isinstance(self._current_rec, type(None)):
             self._current_rec = self.MX(x)
-        cost_val = 0.5 * np.linalg.norm(self._current_rec - self.obs_data) ** 2
+        cost_val = 0.5 * np.linalg.norm(self.obs_weights * (self._current_rec - self.obs_data)) ** 2
         return cost_val
                 
     def get_grad(self, x):
         """Compute current iteration's gradient.
         """
 
-        self.grad = self.MtX(self.MX(x) - self.obs_data)
+        self.grad = self.MtX(self.obs_weights**2 * (self.MX(x) - self.obs_data))
       
 
 class SourceGrad(GradParent, PowerMethod):
@@ -116,6 +119,8 @@ class SourceGrad(GradParent, PowerMethod):
     ----------
     data: np.ndarray
         Input data array, a array of 2D observed images (i.e. with noise).
+    weights: np.ndarray
+        Corresponding pixel-wise weights.
     A: np.ndarray
         Current estimation of corresponding coefficients.
     flux: np.ndarray
@@ -132,9 +137,11 @@ class SourceGrad(GradParent, PowerMethod):
         Set of filters.
     """
 
-    def __init__(self, data, A, flux, sig, ker, ker_rot, D, filters, data_type='float'):
+    def __init__(self, data, weights, A, flux, sig, ker, ker_rot, D, filters, 
+                 data_type='float'):
         self._grad_data_type = data_type
         self.obs_data = data
+        self.obs_weights = weights
         self.op = self.MX 
         self.trans_op = self.MtX 
         self.A = np.copy(A)
@@ -152,7 +159,7 @@ class SourceGrad(GradParent, PowerMethod):
         self._current_rec = None # stores latest application of self.MX
 
     def update_A(self, new_A, update_spectral_radius=True):
-        """Update current weights.
+        """Update current coefficients.
         """
         self.A = new_A
         if update_spectral_radius:
@@ -203,7 +210,7 @@ class SourceGrad(GradParent, PowerMethod):
         """Compute current iteration's gradient.
         """
 
-        self.grad = self.MtX(self.MX(x) - self.obs_data)
+        self.grad = self.MtX(self.obs_weights**2 * (self.MX(x) - self.obs_data))
 
 
 
