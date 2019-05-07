@@ -167,16 +167,16 @@ class RCA(object):
         self.graph_kwargs = graph_kwargs
             
         if self.verbose:
-            print 'Running basic initialization tasks...'
+            print('Running basic initialization tasks...')
         self._initialize()
         if self.verbose:
-            print '... Done.'
+            print('... Done.')
         if self.VT is None or self.alpha is None:
             if self.verbose:
-                print 'Constructing graph constraint...'
+                print('Constructing graph constraint...')
             self._initialize_graph_constraint()
             if self.verbose:
-                print '... Done.'
+                print('... Done.')
         else:
             self.A = self.alpha.dot(self.VT)
         self._fit()

@@ -127,7 +127,7 @@ def kthresholding(x,k):
     """
     k = int(k)
     if k<1:
-        print "Warning: wrong k value for k-thresholding"
+        print("Warning: wrong k value for k-thresholding")
         k = 1
     if k>len(x):
         return x
@@ -348,7 +348,7 @@ class GraphBuilder(object):
         shap = self.obs_data.shape
         e_max = self.pick_emax()
         if self.verbose:
-            print " > power max = ",e_max
+            print(" > power max = ",e_max)
         a_range = np.geomspace(0.01, 1.99, self.ea_gridsize)
         e_range = np.geomspace(0.01, e_max, self.ea_gridsize)
         # initialize R matrix with observations
@@ -367,8 +367,8 @@ class GraphBuilder(object):
             vect = best_VT[j].reshape(1,-1)
             R -= vect.T.dot(vect.dot(R))
             if self.verbose:
-                print " > selected e: {}\tselected a: {}\t chosen index: {}/{}".format(
-                                                             e, a, j, self.n_eigenvects)
+                print(" > selected e: {}\tselected a: {}\t chosen index: {}/{}".format(
+                                                             e, a, j, self.n_eigenvects))
         self.VT = np.vstack((eigenvect for eigenvect in list_eigenvects))
         self.alpha = np.zeros((self.n_comp, self.VT.shape[0]))
         for i in range(self.n_comp):
