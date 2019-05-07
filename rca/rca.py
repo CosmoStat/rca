@@ -1,13 +1,14 @@
+from __future__ import absolute_import, print_function
 import numpy as np
-import utils
+from scipy.interpolate import Rbf
 from modopt.signal.wavelet import get_mr_filters, filter_convolve
 from modopt.opt.cost import costObj
 from modopt.opt.proximity import Positivity
-import modopt.opt.algorithms as optimalg
-import proxs as rca_prox
-import grads
 from modopt.opt.reweight import cwbReweight
-from scipy.interpolate import Rbf
+import modopt.opt.algorithms as optimalg
+import rca.proxs as rca_prox
+import rca.grads as grads
+import rca.utils as utils
 
 def quickload(path):
     """ Load pre-fitted RCA model (saved with :func:`RCA.quicksave`).

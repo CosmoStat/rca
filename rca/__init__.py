@@ -1,2 +1,2 @@
 __all__ = ['rca']
-from rca import RCA, quickload
+from .rca import RCA, quickload

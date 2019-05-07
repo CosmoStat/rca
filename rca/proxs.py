@@ -1,11 +1,12 @@
 """ Defines proximal operators to be fed to ModOpt algorithm that are specific to RCA
 (or rather, not currently in ``modopt.opt.proximity``)."""
 
-from utils import lineskthresholding, reg_format, rca_format, SoftThresholding, apply_transform
-from modopt.signal.noise import thresh
+from __future__ import absolute_import, print_function
 import numpy as np
+from modopt.signal.noise import thresh
 from modopt.opt.linear import LinearParent
 from modopt.signal.wavelet import filter_convolve
+from rca.utils import lineskthresholding, reg_format, rca_format, SoftThresholding, apply_transform
      
 class LinRecombine(object):
     """ Multiply eigenvectors and (factorized) weights."""
