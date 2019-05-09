@@ -18,7 +18,9 @@ def quickload(path):
     path: str
         Path to where the fitted RCA model was saved.
     """
-    RCA_params, fitted_model = np.load(path+'.npy')
+    if path[-4:] != '.npy':
+        path += '.npy'
+    RCA_params, fitted_model = np.load(path, allow_pickle=True)
     loaded_rca = RCA(**RCA_params)
     loaded_rca.obs_pos = fitted_model['obs_pos']
     loaded_rca.A = fitted_model['A']
@@ -193,8 +195,7 @@ class RCA(object):
         Parameters
         ----------
         path: str
-            Path to where the fitted RCA model should be saved. The ``.npy`` extension will be
-            added.
+            Path to where the fitted RCA model should be saved.
         """
         if not self.is_fitted:
             raise ValueError('RCA instance has not yet been fitted to observations. Please run\
@@ -202,7 +203,10 @@ class RCA(object):
         RCA_params = {'n_comp': self.n_comp, 'upfact': self.upfact}
         fitted_model = {'obs_pos': self.obs_pos, 'A': self.A, 'S': self.S,
                         'flux_ref': self.flux_ref}
-        np.save(path+'.npy', [RCA_params,fitted_model])
+
+        if path[-4:] != '.npy':
+            path += '.npy'
+        np.save(path, [RCA_params,fitted_model])
         
         
     def estimate_psf(self, test_pos, n_neighbors=15, rbf_function='thin_plate', 
@@ -381,7 +385,7 @@ window of 7.5 pixels.''')
             sparsity_prox.update_threshold(tau*thresholds)
             
             # and run source update:
-            transf_comp = rca_prox.apply_transform(comp, self.starlet_filters)
+            transf_comp = utils.apply_transform(comp, self.starlet_filters)
             if self.nb_reweight:
                 reweighter = cwbReweight(thresholds)
                 for _ in range(self.nb_reweight):
