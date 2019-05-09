@@ -161,6 +161,26 @@ def mad(x, weight=None):
         valid_pixels = x
     return np.median(np.abs(valid_pixels-np.median(valid_pixels)))
 
+def transform_mask(weights, filt):
+    """ Propagate bad pixels (with weight 0) to 1st wavelet scale and mask
+    all pixels affected.
+    """
+    stamp_size = weights.shape[0]
+    antimask = np.zeros(weights.shape)
+    antimask[weights == 0] = 1
+    kernel = np.where(filt!=0)[0]
+    filt_radius = np.max(kernel) - np.min(kernel)
+    bad_pix = np.where(antimask)
+    for pixx, pixy, flagged_idx in zip(*bad_pix):
+        lx = max(0,pixx-filt_radius)
+        ly = max(0,pixy-filt_radius)
+        rx = min(pixx+filt_radius, stamp_size)
+        ry = min(pixy+filt_radius, stamp_size)
+        antimask[lx:rx,ly:ry,flagged_idx] = 1
+
+    mask = np.abs(antimask-1)
+    return mask
+
 def lanczos(U,n=10,n2=None):
     """Generate Lanczos kernel for a given shift.
     """

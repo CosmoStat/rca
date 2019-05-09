@@ -28,62 +28,8 @@
         <div class="bodywrapper">
           <div class="body" role="main">
             
-  <div class="section" id="module-proxs">
-<span id="proxs"></span><h1>proxs<a class="headerlink" href="#module-proxs" title="Permalink to this headline">¶</a></h1>
-<p>Defines proximal operators to be fed to ModOpt algorithm that are specific to RCA
-(or rather, not currently in <code class="docutils literal notranslate"><span class="pre">modopt.opt.proximity</span></code>).</p>
-<dl class="class">
-<dt id="proxs.KThreshold">
-<em class="property">class </em><code class="descclassname">proxs.</code><code class="descname">KThreshold</code><span class="sig-paren">(</span><em>iter_func</em><span class="sig-paren">)</span><a class="headerlink" href="#proxs.KThreshold" title="Permalink to this definition">¶</a></dt>
-<dd><p>This class defines linewise hard-thresholding operator with variable thresholds.</p>
-<dl class="docutils">
-<dt>iter_func: function</dt>
-<dd>Input function that calcultates the number of non-zero values to keep in each line at each iteration.</dd>
-</dl>
-<dl class="method">
-<dt id="proxs.KThreshold.cost">
-<code class="descname">cost</code><span class="sig-paren">(</span><em>x</em><span class="sig-paren">)</span><a class="headerlink" href="#proxs.KThreshold.cost" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns 0 (Indicator of <span class="math notranslate nohighlight">\(\Omega\)</span> is either 0 or infinity).</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="proxs.KThreshold.op">
-<code class="descname">op</code><span class="sig-paren">(</span><em>data</em>, <em>extra_factor=1.0</em><span class="sig-paren">)</span><a class="headerlink" href="#proxs.KThreshold.op" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return input data after thresholding.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="proxs.KThreshold.reset_iter">
-<code class="descname">reset_iter</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#proxs.KThreshold.reset_iter" title="Permalink to this definition">¶</a></dt>
-<dd><p>Set iteration counter to zero.</p>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="class">
-<dt id="proxs.LinRecombine">
-<em class="property">class </em><code class="descclassname">proxs.</code><code class="descname">LinRecombine</code><span class="sig-paren">(</span><em>A</em>, <em>filters</em>, <em>compute_norm=False</em><span class="sig-paren">)</span><a class="headerlink" href="#proxs.LinRecombine" title="Permalink to this definition">¶</a></dt>
-<dd><p>Multiply eigenvectors and (factorized) weights.</p>
-</dd></dl>
-
-<dl class="class">
-<dt id="proxs.StarletThreshold">
-<em class="property">class </em><code class="descclassname">proxs.</code><code class="descname">StarletThreshold</code><span class="sig-paren">(</span><em>threshold</em>, <em>thresh_type='soft'</em><span class="sig-paren">)</span><a class="headerlink" href="#proxs.StarletThreshold" title="Permalink to this definition">¶</a></dt>
-<dd><p>Apply soft thresholding in Starlet domain.</p>
-<dl class="docutils">
-<dt>threshold: np.ndarray</dt>
-<dd>Threshold levels.</dd>
-<dt>thresh_type: str</dt>
-<dd>Whether soft- or hard-thresholding should be used. Default is <code class="docutils literal notranslate"><span class="pre">'soft'</span></code>.</dd>
-</dl>
-<dl class="method">
-<dt id="proxs.StarletThreshold.op">
-<code class="descname">op</code><span class="sig-paren">(</span><em>transf_data</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#proxs.StarletThreshold.op" title="Permalink to this definition">¶</a></dt>
-<dd><p>Applies Starlet transform and perform thresholding.</p>
-</dd></dl>
-
-</dd></dl>
-
+  <div class="section" id="proxs">
+<h1>proxs<a class="headerlink" href="#proxs" title="Permalink to this headline">¶</a></h1>
 </div>
 
 

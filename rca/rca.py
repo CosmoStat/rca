@@ -292,9 +292,10 @@ window of 7.5 pixels.''')
         self.init_filters = get_mr_filters(self.shap[:2], opt=self.opt_sig_init, coarse=True)
         # noise levels
         if self.sigs is None:
-            transf_data = rca_prox.apply_transform(self.obs_data, self.init_filters)
+            transf_data = utils.apply_transform(self.obs_data, self.init_filters)
+            transf_mask = utils.transform_mask(self.obs_weights, self.init_filters[0])
             sigmads = np.array([1.4826*utils.mad(fs[0],w) for fs,w in zip(transf_data,
-                                                      utils.reg_format(self.obs_weights))])
+                                                      utils.reg_format(transf_mask))])
             self.sigs = sigmads / np.linalg.norm(self.init_filters[0])
         else:
             self.sigs = np.copy(self.sigs)
