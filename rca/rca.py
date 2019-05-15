@@ -42,30 +42,35 @@ class RCA(object):
         Value of :math:`k` for the thresholding in Starlet domain (taken to be 
         :math:`k\sigma`, where :math:`\sigma` is the estimated noise standard deviation.)
     n_scales: int
-        Number of Starlet scales to use for the sparsity constraint. Default is 3.
+        Number of Starlet scales to use for the sparsity constraint. Default is 3. Unused if
+        ``filters`` are provided.
     ksig_init: float
         Similar to ``ksig``, for use when estimating shifts and noise levels, as it might 
         be desirable to have it set higher than ``ksig``. Unused if ``shifts`` are provided 
         when running :func:`RCA.fit`. Default is 5.
-    n_scales_init: int
-        Similar to ``n_scales``, for use when estimating shifts and noise levels, as it might 
-        be sufficient to use fewer scales when initializing. Unused if ``sigs`` are provided
-        when running :func:`RCA.fit`. Default is 2.
+    filters: np.ndarray
+        Optional filters to the transform domain wherein eigenPSFs are assumed to be sparse;
+        convolution by them should amount to applying :math:`\Phi`. Optional; if not provided, the
+        Starlet transform with `n_scales` scales will be used.
     verbose: bool or int
         If True, will only output RCA-specific lines to stdout. If verbose is set to 2,
         will run ModOpt's optimization algorithms in verbose mode. 
         
     """
-    def __init__(self, n_comp, upfact=1, ksig=3, n_scales=3,
-                 ksig_init=5, n_scales_init=2, verbose=2):
+    def __init__(self, n_comp, upfact=1, ksig=3, n_scales=3, ksig_init=5, filters=None, 
+                 verbose=2):
         self.n_comp = n_comp
         self.upfact = upfact
         self.ksig = ksig
         self.ksig_init = ksig_init
         
-        # option strings for mr_transform
-        self.opt_sig_init = ['-t2', '-n{}'.format(n_scales_init)]
-        self.opt = ['-t2', '-n{}'.format(n_scales)]
+        if filters is None:
+            # option strings for mr_transform
+            self.opt = ['-t2', '-n{}'.format(n_scales)]
+            self.default_filters = True
+        else:
+            self.Phi_filters = filters
+            self.default_filters = False
         self.verbose = verbose
         if self.verbose > 1:
             self.modopt_verb = True
@@ -289,14 +294,17 @@ window of 7.5 pixels.''')
     def _initialize(self):
         """ Initialization tasks related to noise levels, shifts and flux. Note it includes
         renormalizing observed data, so needs to be ran even if all three are provided."""
-        self.init_filters = get_mr_filters(self.shap[:2], opt=self.opt_sig_init, coarse=True)
+        if self.default_filters:
+            init_filters = get_mr_filters(self.shap[:2], opt=self.opt, coarse=True)
+        else:
+            init_filters = self.Phi_filters
         # noise levels
         if self.sigs is None:
-            transf_data = utils.apply_transform(self.obs_data, self.init_filters)
-            transf_mask = utils.transform_mask(self.obs_weights, self.init_filters[0])
+            transf_data = utils.apply_transform(self.obs_data, init_filters)
+            transf_mask = utils.transform_mask(self.obs_weights, init_filters[0])
             sigmads = np.array([1.4826*utils.mad(fs[0],w) for fs,w in zip(transf_data,
                                                       utils.reg_format(transf_mask))])
-            self.sigs = sigmads / np.linalg.norm(self.init_filters[0])
+            self.sigs = sigmads / np.linalg.norm(init_filters[0])
         else:
             self.sigs = np.copy(self.sigs)
         self.sig_min = np.min(self.sigs)
@@ -306,7 +314,7 @@ window of 7.5 pixels.''')
             cents = []
             for i in range(self.shap[2]):
                 # don't allow thresholding to be over 80% of maximum observed pixel
-                nsig_shifts = min(self.ksig_init,0.8*self.obs_data[:,:,i].max()/self.sigs[i])
+                nsig_shifts = min(self.ksig_init, 0.8*self.obs_data[:,:,i].max()/self.sigs[i])
                 thresh_data[:,:,i] = utils.HardThresholding(thresh_data[:,:,i], nsig_shifts*self.sigs[i])
                 cents += [utils.CentroidEstimator(thresh_data[:,:,i], sig=self.psf_size)]
             self.shifts = np.array([ce.return_shifts() for ce in cents])
@@ -335,19 +343,20 @@ window of 7.5 pixels.''')
         #### Source updates set-up ####
         # initialize dual variable and compute Starlet filters for Condat source updates 
         dual_var = np.zeros((self.im_hr_shape))
-        self.starlet_filters = get_mr_filters(self.im_hr_shape[:2], opt=self.opt, coarse=True)
-        rho_phi = np.sqrt(np.sum(np.sum(np.abs(self.starlet_filters),axis=(1,2))**2))
+        if self.default_filters:
+            self.Phi_filters = get_mr_filters(self.im_hr_shape[:2], opt=self.opt, coarse=True)
+        rho_phi = np.sqrt(np.sum(np.sum(np.abs(self.Phi_filters),axis=(1,2))**2))
         
         # Set up source updates, starting with the gradient
         source_grad = grads.SourceGrad(self.obs_data, self.obs_weights, weights, self.flux, self.sigs, 
                                       self.shift_ker_stack, self.shift_ker_stack_adj, 
-                                      self.upfact, self.starlet_filters)
+                                      self.upfact, self.Phi_filters)
 
         # sparsity in Starlet domain prox (this is actually assuming synthesis form)
         sparsity_prox = rca_prox.StarletThreshold(0) # we'll update to the actual thresholds later
 
         # and the linear recombination for the positivity constraint
-        lin_recombine = rca_prox.LinRecombine(weights, self.starlet_filters)
+        lin_recombine = rca_prox.LinRecombine(weights, self.Phi_filters)
 
         #### Weight updates set-up ####
         # gradient
@@ -380,13 +389,13 @@ window of 7.5 pixels.''')
             thresh = utils.reg_format(utils.acc_sig_maps(self.shap,self.shift_ker_stack_adj,self.sigs,
                                                         self.flux,self.flux_ref,self.upfact,weights,
                                                         sig_data=np.ones((self.shap[2],))*self.sig_min))
-            thresholds = self.ksig*np.sqrt(np.array([filter_convolve(Sigma_k**2,self.starlet_filters**2) 
+            thresholds = self.ksig*np.sqrt(np.array([filter_convolve(Sigma_k**2,self.Phi_filters**2) 
                                               for Sigma_k in thresh]))
 
             sparsity_prox.update_threshold(tau*thresholds)
             
             # and run source update:
-            transf_comp = utils.apply_transform(comp, self.starlet_filters)
+            transf_comp = utils.apply_transform(comp, self.Phi_filters)
             if self.nb_reweight:
                 reweighter = cwbReweight(thresholds)
                 for _ in range(self.nb_reweight):
@@ -401,7 +410,7 @@ window of 7.5 pixels.''')
                                                Positivity(), linear = lin_recombine, cost=source_cost,
                                                max_iter=self.nb_subiter_S, tau=tau, sigma=sigma)
                 transf_comp = source_optim.x_final
-            comp = utils.rca_format(np.array([filter_convolve(transf_compj, self.starlet_filters, True)
+            comp = utils.rca_format(np.array([filter_convolve(transf_compj, self.Phi_filters, True)
                                     for transf_compj in transf_comp]))
             
             #TODO: replace line below with Fred's component selection (to be extracted from `low_rank_global_src_est_comb`)
