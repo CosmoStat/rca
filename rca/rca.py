@@ -273,6 +273,30 @@ class RCA(object):
             return PSFs
         else:
             return utils.reg_format(PSFs)
+
+    def validation_stars(self, test_stars, test_pos):
+        """ Match PSF model to stars - in flux, shift and pixel sampling - for validation tests.
+        Returns both the matched PSFs' stamps and chi-square value.
+        
+        Parameters
+        ----------
+        test_stars: np.ndarray
+            Star stamps to be used for comparison with the PSF model. Should be in "rca" format, 
+            i.e. with axises (n_pixels, n_pixels, n_stars).
+        test_pos: np.ndarray
+            Their corresponding positions.
+        """
+        if not self.is_fitted:
+            raise ValueError('RCA instance has not yet been fitted to observations. Please run\
+            the fit method.')
+        cents = []
+        for star in utils.reg_format(test_stars):
+            cents += [utils.CentroidEstimator(star)]
+        test_shifts = np.array([ce.return_shifts() for ce in cents])
+        test_fluxes = utils.flux_estimate_stack(test_stars,rad=4)
+        matched_psfs = self.estimate_psf(test_pos, apply_degradation=True, 
+                                    shifts=test_shifts, flux=test_fluxes)
+        return matched_psfs
         
     def _set_psf_size(self, psf_size, psf_size_type):
         """ Handles different "size" conventions."""
