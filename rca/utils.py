@@ -216,11 +216,11 @@ def flux_estimate(im,cent=None,rad=4): # Default value for the flux tuned for Eu
     """
     flux = 0
     if cent is None:
-        cent = np.array(np.where(im==im.max())).reshape((1,2))
+        cent = [max_coord[0] for max_coord in np.where(im==np.max(im))]
     shap = im.shape
     for i in range(0,shap[0]):
         for j in range(0,shap[1]):
-            if np.sqrt((i-cent[0,0])**2+(j-cent[0,1])**2)<=rad:
+            if np.sqrt((i-cent[0])**2+(j-cent[1])**2)<=rad:
                 flux = flux+im[i,j]
     return flux
 

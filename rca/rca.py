@@ -346,6 +346,7 @@ window of 7.5 pixels.''')
                                                                               self.upfact)
         # flux levels
         if self.flux is None:
+            #TODO: could actually pass on the centroids to flux estimator since we have them at this point
             self.flux = utils.flux_estimate_stack(self.obs_data,rad=4)
         self.flux_ref = np.median(self.flux)
         # Normalize noise levels observed data
