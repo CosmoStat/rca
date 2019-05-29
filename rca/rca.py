@@ -26,6 +26,9 @@ def quickload(path):
     loaded_rca.A = fitted_model['A']
     loaded_rca.S = fitted_model['S']
     loaded_rca.flux_ref = fitted_model['flux_ref']
+    loaded_rca.psf_size = fitted_model['psf_size']
+    loaded_rca.VT = fitted_model['VT']
+    loaded_rca.alpha = fitted_model['alpha']
     loaded_rca.is_fitted = True
     return loaded_rca
 
@@ -207,7 +210,8 @@ class RCA(object):
             the fit method.')
         RCA_params = {'n_comp': self.n_comp, 'upfact': self.upfact}
         fitted_model = {'obs_pos': self.obs_pos, 'A': self.A, 'S': self.S,
-                        'flux_ref': self.flux_ref}
+                        'flux_ref': self.flux_ref, 'psf_size': self.psf_size,
+                        'VT': self.VT, 'alpha': self.alpha}
 
         if path[-4:] != '.npy':
             path += '.npy'
@@ -291,7 +295,7 @@ class RCA(object):
             the fit method.')
         cents = []
         for star in utils.reg_format(test_stars):
-            cents += [utils.CentroidEstimator(star)]
+            cents += [utils.CentroidEstimator(star, sig=self.psf_size)]
         test_shifts = np.array([ce.return_shifts() for ce in cents])
         test_fluxes = utils.flux_estimate_stack(test_stars,rad=4)
         matched_psfs = self.estimate_psf(test_pos, apply_degradation=True, 
