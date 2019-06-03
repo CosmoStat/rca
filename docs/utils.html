@@ -1,0 +1,329 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>utils &#8212; RCA 2 documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="grads" href="grads.html" />
+    <link rel="prev" title="RCA" href="rca.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-utils">
+<span id="utils"></span><h1>utils<a class="headerlink" href="#module-utils" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="utils.CentroidEstimator">
+<em class="property">class </em><code class="descclassname">utils.</code><code class="descname">CentroidEstimator</code><span class="sig-paren">(</span><em>im</em>, <em>sig=7.5</em>, <em>n_iter=5</em>, <em>auto_run=True</em>, <em>xc=None</em>, <em>yc=None</em><span class="sig-paren">)</span><a class="headerlink" href="#utils.CentroidEstimator" title="Permalink to this definition">¶</a></dt>
+<dd><p>Estimate intra-pixel shifts.</p>
+<dl class="method">
+<dt id="utils.CentroidEstimator.EllipticalGaussian">
+<code class="descname">EllipticalGaussian</code><span class="sig-paren">(</span><em>e1=0</em>, <em>e2=0</em><span class="sig-paren">)</span><a class="headerlink" href="#utils.CentroidEstimator.EllipticalGaussian" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes an elliptical 2D gaussian with arbitrary centroid.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="utils.CentroidEstimator.return_shifts">
+<code class="descname">return_shifts</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#utils.CentroidEstimator.return_shifts" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns intra-pixel shifts, that is, the difference between the estimated centroid
+and the center of the stamp (or pixel grid).</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="utils.GraphBuilder">
+<em class="property">class </em><code class="descclassname">utils.</code><code class="descname">GraphBuilder</code><span class="sig-paren">(</span><em>obs_data</em>, <em>obs_pos</em>, <em>obs_weights</em>, <em>n_comp</em>, <em>n_eigenvects=None</em>, <em>n_iter=3</em>, <em>ea_gridsize=10</em>, <em>distances=None</em>, <em>auto_run=True</em>, <em>verbose=True</em><span class="sig-paren">)</span><a class="headerlink" href="#utils.GraphBuilder" title="Permalink to this definition">¶</a></dt>
+<dd><p>GraphBuilder.</p>
+<p>This class computes the necessary quantities for RCA’s graph constraint.</p>
+<dl class="docutils">
+<dt>obs_data: np.ndarray</dt>
+<dd>Observed data.</dd>
+<dt>obs_pos: np.ndarray</dt>
+<dd>Corresponding positions.</dd>
+<dt>obs_weights: np.ndarray</dt>
+<dd>Corresponding per-pixel weights.</dd>
+<dt>n_comp: int</dt>
+<dd>Number of RCA components.</dd>
+<dt>n_eigenvects: int</dt>
+<dd>Maximum number of eigenvectors to consider per <span class="math notranslate nohighlight">\((e,a)\)</span> couple. Default is <code class="docutils literal notranslate"><span class="pre">None</span></code>;
+if not provided, <em>all</em> eigenvectors will be considered, which can lead to a poor
+selection of graphs, especially when data is undersampled. Ignored if <code class="docutils literal notranslate"><span class="pre">VT</span></code> and
+<code class="docutils literal notranslate"><span class="pre">alpha</span></code> are provided.</dd>
+<dt>n_iter: int</dt>
+<dd>How many alternations should there be when optimizing over <span class="math notranslate nohighlight">\(e\)</span> and <span class="math notranslate nohighlight">\(a\)</span>. Default is 3.</dd>
+<dt>ea_gridsize: int</dt>
+<dd>How fine should the logscale grid of <span class="math notranslate nohighlight">\((e,a)\)</span> values be. Default is 10.</dd>
+<dt>distances: np.ndarray</dt>
+<dd>Pairwise distances for all positions. Default is <code class="docutils literal notranslate"><span class="pre">None</span></code>; if not provided, will be
+computed from given positions.</dd>
+<dt>auto_run: bool</dt>
+<dd>Whether to immediately build the graph quantities. Default is <code class="docutils literal notranslate"><span class="pre">True</span></code>.</dd>
+</dl>
+<dl class="method">
+<dt id="utils.GraphBuilder.gen_eigenvects">
+<code class="descname">gen_eigenvects</code><span class="sig-paren">(</span><em>mat</em><span class="sig-paren">)</span><a class="headerlink" href="#utils.GraphBuilder.gen_eigenvects" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes input matrix’s eigenvectors and keep the <code class="docutils literal notranslate"><span class="pre">n_eigenvects</span></code> associated with
+the smallest eigenvalues.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="utils.GraphBuilder.pick_emax">
+<code class="descname">pick_emax</code><span class="sig-paren">(</span><em>epsilon=1e-15</em><span class="sig-paren">)</span><a class="headerlink" href="#utils.GraphBuilder.pick_emax" title="Permalink to this definition">¶</a></dt>
+<dd><p>Select maximum value of <span class="math notranslate nohighlight">\(e\)</span> for the greedy search over set of
+<span class="math notranslate nohighlight">\((e,a)\)</span> couples, so that the graph is still fully connected.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="utils.GraphBuilder.select_params">
+<code class="descname">select_params</code><span class="sig-paren">(</span><em>R</em>, <em>e_range</em>, <em>a_range</em><span class="sig-paren">)</span><a class="headerlink" href="#utils.GraphBuilder.select_params" title="Permalink to this definition">¶</a></dt>
+<dd><p>Selects <span class="math notranslate nohighlight">\((e,a)\)</span> parameters and best eigenvector for current <span class="math notranslate nohighlight">\(R_i\)</span> matrix.</p>
+<dl class="docutils">
+<dt>R: np.ndarray</dt>
+<dd>Current <span class="math notranslate nohighlight">\(R_i\)</span> matrix (as defined in RCA paper, sect. 5.5.3.)</dd>
+<dt>e_range: np.ndarray</dt>
+<dd>List of <span class="math notranslate nohighlight">\(e\)</span> values to be tested.</dd>
+<dt>a_range: np.ndarray</dt>
+<dd>List of <span class="math notranslate nohighlight">\(a\)</span> values to be tested.</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="utils.HardThresholding">
+<code class="descclassname">utils.</code><code class="descname">HardThresholding</code><span class="sig-paren">(</span><em>data</em>, <em>thresh</em><span class="sig-paren">)</span><a class="headerlink" href="#utils.HardThresholding" title="Permalink to this definition">¶</a></dt>
+<dd><p>Performs element-wise hard thresholding.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="utils.SoftThresholding">
+<code class="descclassname">utils.</code><code class="descname">SoftThresholding</code><span class="sig-paren">(</span><em>data</em>, <em>thresh</em><span class="sig-paren">)</span><a class="headerlink" href="#utils.SoftThresholding" title="Permalink to this definition">¶</a></dt>
+<dd><p>Performs element-wise soft thresholding.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="utils.acc_sig_map">
+<code class="descclassname">utils.</code><code class="descname">acc_sig_map</code><span class="sig-paren">(</span><em>shap_im</em>, <em>ker_stack</em>, <em>sig_est</em>, <em>flux_est</em>, <em>flux_ref</em>, <em>upfact</em>, <em>w</em>, <em>sig_data=None</em><span class="sig-paren">)</span><a class="headerlink" href="#utils.acc_sig_map" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes the square root of <span class="math notranslate nohighlight">\(\mathcal{F}^{2*}(\hat\sigma^2)(A^\top\odot A^\top)\)</span>.
+See equation (27) in RCA paper.
+Note <span class="math notranslate nohighlight">\(\mathrm{Var}(B)\)</span> has been replaced by the noise level as estimated from the data,
+and here we do not have the term <span class="math notranslate nohighlight">\(\mu\)</span> (gradient step size in the paper).</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="utils.apply_transform">
+<code class="descclassname">utils.</code><code class="descname">apply_transform</code><span class="sig-paren">(</span><em>data</em>, <em>filters</em><span class="sig-paren">)</span><a class="headerlink" href="#utils.apply_transform" title="Permalink to this definition">¶</a></dt>
+<dd><p>Transform <code class="docutils literal notranslate"><span class="pre">data</span></code> through application of a set of filters.</p>
+<dl class="docutils">
+<dt>data: np.ndarray</dt>
+<dd>Data to be transformed. Should be in RCA format (image index is contained
+on last/2nd axis).</dd>
+<dt>filters: np.ndarray</dt>
+<dd>Set of filters.</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="utils.decim">
+<code class="descclassname">utils.</code><code class="descname">decim</code><span class="sig-paren">(</span><em>im</em>, <em>d</em>, <em>av_en=1</em>, <em>fft=1</em><span class="sig-paren">)</span><a class="headerlink" href="#utils.decim" title="Permalink to this definition">¶</a></dt>
+<dd><p>Decimate image to lower resolution.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="utils.flux_estimate">
+<code class="descclassname">utils.</code><code class="descname">flux_estimate</code><span class="sig-paren">(</span><em>im</em>, <em>cent=None</em>, <em>rad=4</em><span class="sig-paren">)</span><a class="headerlink" href="#utils.flux_estimate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Estimate flux for one image (see SPRITE paper, section 3.4.1., subsection ‘Photometric flux’).</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="utils.flux_estimate_stack">
+<code class="descclassname">utils.</code><code class="descname">flux_estimate_stack</code><span class="sig-paren">(</span><em>stack</em>, <em>cent=None</em>, <em>rad=4</em><span class="sig-paren">)</span><a class="headerlink" href="#utils.flux_estimate_stack" title="Permalink to this definition">¶</a></dt>
+<dd><p>Estimate flux for a bunch of images.</p>
+<p>Calls:</p>
+<ul class="simple">
+<li><a class="reference internal" href="#utils.flux_estimate" title="utils.flux_estimate"><code class="xref py py-func docutils literal notranslate"><span class="pre">utils.flux_estimate()</span></code></a></li>
+</ul>
+</dd></dl>
+
+<dl class="function">
+<dt id="utils.gen_Pea">
+<code class="descclassname">utils.</code><code class="descname">gen_Pea</code><span class="sig-paren">(</span><em>distances</em>, <em>e</em>, <em>a</em><span class="sig-paren">)</span><a class="headerlink" href="#utils.gen_Pea" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes <span class="math notranslate nohighlight">\(P_{e,a}\)</span> matrix for given <code class="docutils literal notranslate"><span class="pre">e</span></code>, <code class="docutils literal notranslate"><span class="pre">a</span></code> couple. See Equations (16-17)
+in RCA paper.</p>
+<dl class="docutils">
+<dt>distances: np.ndarray</dt>
+<dd>Array of pairwise distances</dd>
+<dt>e: float</dt>
+<dd>Exponent to which the pairwise distances should be raised.</dd>
+<dt>a: float</dt>
+<dd>Constant multiplier along Laplacian’s diagonal.</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="utils.kthresholding">
+<code class="descclassname">utils.</code><code class="descname">kthresholding</code><span class="sig-paren">(</span><em>x</em>, <em>k</em><span class="sig-paren">)</span><a class="headerlink" href="#utils.kthresholding" title="Permalink to this definition">¶</a></dt>
+<dd><p>Applies k-thresholding (keep only <code class="docutils literal notranslate"><span class="pre">k</span></code> highest values, set rest to 0).</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="utils.lanczos">
+<code class="descclassname">utils.</code><code class="descname">lanczos</code><span class="sig-paren">(</span><em>U</em>, <em>n=10</em>, <em>n2=None</em><span class="sig-paren">)</span><a class="headerlink" href="#utils.lanczos" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generate Lanczos kernel for a given shift.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="utils.lineskthresholding">
+<code class="descclassname">utils.</code><code class="descname">lineskthresholding</code><span class="sig-paren">(</span><em>mat</em>, <em>k</em><span class="sig-paren">)</span><a class="headerlink" href="#utils.lineskthresholding" title="Permalink to this definition">¶</a></dt>
+<dd><p>Applies k-thresholding to each line of input matrix.</p>
+<p>Calls:</p>
+<ul class="simple">
+<li><a class="reference internal" href="#utils.kthresholding" title="utils.kthresholding"><code class="xref py py-func docutils literal notranslate"><span class="pre">utils.kthresholding()</span></code></a></li>
+</ul>
+</dd></dl>
+
+<dl class="function">
+<dt id="utils.mad">
+<code class="descclassname">utils.</code><code class="descname">mad</code><span class="sig-paren">(</span><em>x</em>, <em>weight=None</em><span class="sig-paren">)</span><a class="headerlink" href="#utils.mad" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes MAD.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="utils.pairwise_distances">
+<code class="descclassname">utils.</code><code class="descname">pairwise_distances</code><span class="sig-paren">(</span><em>obs_pos</em><span class="sig-paren">)</span><a class="headerlink" href="#utils.pairwise_distances" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes pairwise distances.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="utils.rca_format">
+<code class="descclassname">utils.</code><code class="descname">rca_format</code><span class="sig-paren">(</span><em>cube</em><span class="sig-paren">)</span><a class="headerlink" href="#utils.rca_format" title="Permalink to this definition">¶</a></dt>
+<dd><p>Switch from “regular” format to “RCA” format (ie. image index is contained
+on last/2nd axis)</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="utils.reg_format">
+<code class="descclassname">utils.</code><code class="descname">reg_format</code><span class="sig-paren">(</span><em>rca_cube</em><span class="sig-paren">)</span><a class="headerlink" href="#utils.reg_format" title="Permalink to this definition">¶</a></dt>
+<dd><p>Switch from “RCA” format to “regular” format (ie. image index is contained
+on 0th axis).</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="utils.return_neighbors">
+<code class="descclassname">utils.</code><code class="descname">return_neighbors</code><span class="sig-paren">(</span><em>new_pos</em>, <em>obs_pos</em>, <em>vals</em>, <em>n_neighbors</em><span class="sig-paren">)</span><a class="headerlink" href="#utils.return_neighbors" title="Permalink to this definition">¶</a></dt>
+<dd><p>Find the <code class="docutils literal notranslate"><span class="pre">n_neighbors</span></code> nearest neighbors.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="utils.select_vstar">
+<code class="descclassname">utils.</code><code class="descname">select_vstar</code><span class="sig-paren">(</span><em>eigenvects</em>, <em>R</em>, <em>weights</em><span class="sig-paren">)</span><a class="headerlink" href="#utils.select_vstar" title="Permalink to this definition">¶</a></dt>
+<dd><p>Pick best eigenvector from a set of <span class="math notranslate nohighlight">\((e,a)\)</span>, i.e., solve (35) from RCA paper.</p>
+<dl class="docutils">
+<dt>eigenvects: np.ndarray</dt>
+<dd>Array of eigenvects to be tested over.</dd>
+<dt>R: np.ndarray</dt>
+<dd><span class="math notranslate nohighlight">\(R_i\)</span> matrix.</dd>
+<dt>weights: np.ndarray</dt>
+<dd>Entry-wise weights for <span class="math notranslate nohighlight">\(R_i\)</span>.</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="utils.shift_ker_stack">
+<code class="descclassname">utils.</code><code class="descname">shift_ker_stack</code><span class="sig-paren">(</span><em>shifts</em>, <em>upfact</em>, <em>lanc_rad=4</em><span class="sig-paren">)</span><a class="headerlink" href="#utils.shift_ker_stack" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generate shifting kernels and rotated shifting kernels.</p>
+<p>Calls:</p>
+<ul class="simple">
+<li><a class="reference internal" href="#utils.lanczos" title="utils.lanczos"><code class="xref py py-func docutils literal notranslate"><span class="pre">utils.lanczos()</span></code></a></li>
+</ul>
+</dd></dl>
+
+<dl class="function">
+<dt id="utils.transform_mask">
+<code class="descclassname">utils.</code><code class="descname">transform_mask</code><span class="sig-paren">(</span><em>weights</em>, <em>filt</em><span class="sig-paren">)</span><a class="headerlink" href="#utils.transform_mask" title="Permalink to this definition">¶</a></dt>
+<dd><p>Propagate bad pixels (with weight 0) to 1st wavelet scale and mask
+all pixels affected.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="utils.transpose_decim">
+<code class="descclassname">utils.</code><code class="descname">transpose_decim</code><span class="sig-paren">(</span><em>im</em>, <em>decim_fact</em>, <em>av_en=0</em><span class="sig-paren">)</span><a class="headerlink" href="#utils.transpose_decim" title="Permalink to this definition">¶</a></dt>
+<dd><p>Applies the transpose of the decimation matrix.</p>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="rca.html" title="previous chapter">RCA</a></li>
+      <li>Next: <a href="grads.html" title="next chapter">grads</a></li>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/utils.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2019, Fred Ngolè-Mboula, Morgan A. Schmitz, Jean-Luc Starck.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.5</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.7</a>
+      
+      |
+      <a href="_sources/utils.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
