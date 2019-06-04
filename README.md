@@ -5,7 +5,7 @@ Resolved Component Analysis
 v2.0
 
 ## Description
-RCA is a PSF modelling python package. It enforces several constraints, notably some related to sparsity and spatial structure, to build a spatially-varying PSF model from observed, noisy and possibly undersampled star stamps. Some modicum of documentation can be found [here](https://morganschmitz.github.io/rca/) - see also [quick start](#quick-start) below.
+RCA is a PSF modelling python package. It enforces several constraints, notably some related to sparsity and spatial structure, to build a spatially-varying PSF model from observed, noisy and possibly undersampled star stamps. Some modicum of documentation can be found [here](https://cosmostat.github.io/rca/) - see also [quick start](#quick-start) below.
 
 ## Requirements
 The following python packages are required:
@@ -20,7 +20,7 @@ You will also need a compiled version of the sparse2d module of [ISAP](http://ww
 After installing all dependencies, RCA just needs to be cloned and python-installed:
 
 ```
-git clone https://github.com/MorganSchmitz/rca.git
+git clone https://github.com/CosmoStat/rca.git
 cd rca
 python setup.py install
 ```

@@ -29,8 +29,147 @@
         <div class="bodywrapper">
           <div class="body" role="main">
             
-  <div class="section" id="grads">
-<h1>grads<a class="headerlink" href="#grads" title="Permalink to this headline">¶</a></h1>
+  <div class="section" id="module-grads">
+<span id="grads"></span><h1>grads<a class="headerlink" href="#module-grads" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="grads.CoeffGrad">
+<em class="property">class </em><code class="descclassname">grads.</code><code class="descname">CoeffGrad</code><span class="sig-paren">(</span><em>data</em>, <em>weights</em>, <em>S</em>, <em>VT</em>, <em>flux</em>, <em>sig</em>, <em>ker</em>, <em>ker_rot</em>, <em>D</em>, <em>data_type='float'</em><span class="sig-paren">)</span><a class="headerlink" href="#grads.CoeffGrad" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gradient class for the coefficient update.</p>
+<dl class="docutils">
+<dt>data: np.ndarray</dt>
+<dd>Observed data.</dd>
+<dt>weights: np.ndarray</dt>
+<dd>Corresponding pixel-wise weights.</dd>
+<dt>S: np.ndarray</dt>
+<dd>Current eigenPSFs <span class="math notranslate nohighlight">\(S\)</span>.</dd>
+<dt>VT: np.ndarray</dt>
+<dd>Matrix of concatenated graph Laplacians.</dd>
+<dt>flux: np.ndarray</dt>
+<dd>Per-object flux value.</dd>
+<dt>sig: np.ndarray</dt>
+<dd>Noise levels.</dd>
+<dt>ker: np.ndarray</dt>
+<dd>Shifting kernels.</dd>
+<dt>ker_rot: np.ndarray</dt>
+<dd>Inverted shifting kernels.</dd>
+<dt>D: float</dt>
+<dd>Upsampling factor.</dd>
+</dl>
+<dl class="method">
+<dt id="grads.CoeffGrad.MX">
+<code class="descname">MX</code><span class="sig-paren">(</span><em>alpha</em><span class="sig-paren">)</span><a class="headerlink" href="#grads.CoeffGrad.MX" title="Permalink to this definition">¶</a></dt>
+<dd><p>Apply degradation operator and renormalize.</p>
+<dl class="docutils">
+<dt>alpha: np.ndarray</dt>
+<dd>Current coefficients (after factorization by <span class="math notranslate nohighlight">\(V^\top\)</span>).</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="grads.CoeffGrad.MtX">
+<code class="descname">MtX</code><span class="sig-paren">(</span><em>x</em><span class="sig-paren">)</span><a class="headerlink" href="#grads.CoeffGrad.MtX" title="Permalink to this definition">¶</a></dt>
+<dd><p>Adjoint to degradation operator <a class="reference internal" href="#grads.CoeffGrad.MX" title="grads.CoeffGrad.MX"><code class="xref py py-func docutils literal notranslate"><span class="pre">MX()</span></code></a>.</p>
+<dl class="docutils">
+<dt>x <span class="classifier-delimiter">:</span> <span class="classifier">np.ndarray</span></dt>
+<dd>Set of finer-grid images.</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="grads.CoeffGrad.cost">
+<code class="descname">cost</code><span class="sig-paren">(</span><em>x</em>, <em>y=None</em>, <em>verbose=False</em><span class="sig-paren">)</span><a class="headerlink" href="#grads.CoeffGrad.cost" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute data fidelity term. <code class="docutils literal notranslate"><span class="pre">y</span></code> is unused (it’s just so <code class="docutils literal notranslate"><span class="pre">modopt.opt.algorithms.Condat</span></code> 
+can feed the dual variable.)</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="grads.CoeffGrad.get_grad">
+<code class="descname">get_grad</code><span class="sig-paren">(</span><em>x</em><span class="sig-paren">)</span><a class="headerlink" href="#grads.CoeffGrad.get_grad" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute current iteration’s gradient.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="grads.CoeffGrad.update_S">
+<code class="descname">update_S</code><span class="sig-paren">(</span><em>new_S</em>, <em>update_spectral_radius=True</em><span class="sig-paren">)</span><a class="headerlink" href="#grads.CoeffGrad.update_S" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update current eigenPSFs.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="grads.SourceGrad">
+<em class="property">class </em><code class="descclassname">grads.</code><code class="descname">SourceGrad</code><span class="sig-paren">(</span><em>data</em>, <em>weights</em>, <em>A</em>, <em>flux</em>, <em>sig</em>, <em>ker</em>, <em>ker_rot</em>, <em>D</em>, <em>filters</em>, <em>data_type='float'</em><span class="sig-paren">)</span><a class="headerlink" href="#grads.SourceGrad" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gradient class for the eigenPSF update.</p>
+<dl class="docutils">
+<dt>data: np.ndarray</dt>
+<dd>Input data array, a array of 2D observed images (i.e. with noise).</dd>
+<dt>weights: np.ndarray</dt>
+<dd>Corresponding pixel-wise weights.</dd>
+<dt>A: np.ndarray</dt>
+<dd>Current estimation of corresponding coefficients.</dd>
+<dt>flux: np.ndarray</dt>
+<dd>Per-object flux value.</dd>
+<dt>sig: np.ndarray</dt>
+<dd>Noise levels.</dd>
+<dt>ker: np.ndarray</dt>
+<dd>Shifting kernels.</dd>
+<dt>ker_rot: np.ndarray</dt>
+<dd>Inverted shifting kernels.</dd>
+<dt>D: float</dt>
+<dd>Upsampling factor.</dd>
+<dt>filters: np.ndarray</dt>
+<dd>Set of filters.</dd>
+</dl>
+<dl class="method">
+<dt id="grads.SourceGrad.MX">
+<code class="descname">MX</code><span class="sig-paren">(</span><em>transf_S</em><span class="sig-paren">)</span><a class="headerlink" href="#grads.SourceGrad.MX" title="Permalink to this definition">¶</a></dt>
+<dd><p>Apply degradation operator and renormalize.</p>
+<dl class="docutils">
+<dt>transf_S <span class="classifier-delimiter">:</span> <span class="classifier">np.ndarray</span></dt>
+<dd>Current eigenPSFs in Starlet space.</dd>
+</dl>
+<p>np.ndarray result</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="grads.SourceGrad.MtX">
+<code class="descname">MtX</code><span class="sig-paren">(</span><em>x</em><span class="sig-paren">)</span><a class="headerlink" href="#grads.SourceGrad.MtX" title="Permalink to this definition">¶</a></dt>
+<dd><p>Adjoint to degradation operator <a class="reference internal" href="#grads.SourceGrad.MX" title="grads.SourceGrad.MX"><code class="xref py py-func docutils literal notranslate"><span class="pre">MX()</span></code></a>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="grads.SourceGrad.cost">
+<code class="descname">cost</code><span class="sig-paren">(</span><em>x</em>, <em>y=None</em>, <em>verbose=False</em><span class="sig-paren">)</span><a class="headerlink" href="#grads.SourceGrad.cost" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute data fidelity term. <code class="docutils literal notranslate"><span class="pre">y</span></code> is unused (it’s just so 
+<code class="docutils literal notranslate"><span class="pre">modopt.opt.algorithms.Condat</span></code> can feed the dual variable.)</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="grads.SourceGrad.get_grad">
+<code class="descname">get_grad</code><span class="sig-paren">(</span><em>x</em><span class="sig-paren">)</span><a class="headerlink" href="#grads.SourceGrad.get_grad" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute current iteration’s gradient.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="grads.SourceGrad.update_A">
+<code class="descname">update_A</code><span class="sig-paren">(</span><em>new_A</em>, <em>update_spectral_radius=True</em><span class="sig-paren">)</span><a class="headerlink" href="#grads.SourceGrad.update_A" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update current coefficients.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="grads.adjoint_degradation_op">
+<code class="descclassname">grads.</code><code class="descname">adjoint_degradation_op</code><span class="sig-paren">(</span><em>x_i</em>, <em>shift_ker</em>, <em>D</em><span class="sig-paren">)</span><a class="headerlink" href="#grads.adjoint_degradation_op" title="Permalink to this definition">¶</a></dt>
+<dd><p>Apply adjoint of the degradation operator.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="grads.degradation_op">
+<code class="descclassname">grads.</code><code class="descname">degradation_op</code><span class="sig-paren">(</span><em>X</em>, <em>shift_ker</em>, <em>D</em><span class="sig-paren">)</span><a class="headerlink" href="#grads.degradation_op" title="Permalink to this definition">¶</a></dt>
+<dd><p>Shift and decimate fine-grid image.</p>
+</dd></dl>
+
 </div>
 
 

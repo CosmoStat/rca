@@ -29,8 +29,164 @@
         <div class="bodywrapper">
           <div class="body" role="main">
             
-  <div class="section" id="rca">
-<h1>RCA<a class="headerlink" href="#rca" title="Permalink to this headline">¶</a></h1>
+  <div class="section" id="module-rca">
+<span id="rca"></span><h1>RCA<a class="headerlink" href="#module-rca" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="rca.RCA">
+<em class="property">class </em><code class="descclassname">rca.</code><code class="descname">RCA</code><span class="sig-paren">(</span><em>n_comp</em>, <em>upfact=1</em>, <em>ksig=3</em>, <em>n_scales=3</em>, <em>ksig_init=5</em>, <em>filters=None</em>, <em>verbose=2</em><span class="sig-paren">)</span><a class="headerlink" href="#rca.RCA" title="Permalink to this definition">¶</a></dt>
+<dd><p>Resolved Components Analysis.</p>
+<dl class="docutils">
+<dt>n_comp: int</dt>
+<dd>Number of components to learn.</dd>
+<dt>upfact: int</dt>
+<dd>Upsampling factor. Default is 1 (no superresolution).</dd>
+<dt>ksig: float</dt>
+<dd>Value of <span class="math notranslate nohighlight">\(k\)</span> for the thresholding in Starlet domain (taken to be 
+<span class="math notranslate nohighlight">\(k\sigma\)</span>, where <span class="math notranslate nohighlight">\(\sigma\)</span> is the estimated noise standard deviation.)</dd>
+<dt>n_scales: int</dt>
+<dd>Number of Starlet scales to use for the sparsity constraint. Default is 3. Unused if
+<code class="docutils literal notranslate"><span class="pre">filters</span></code> are provided.</dd>
+<dt>ksig_init: float</dt>
+<dd>Similar to <code class="docutils literal notranslate"><span class="pre">ksig</span></code>, for use when estimating shifts and noise levels, as it might 
+be desirable to have it set higher than <code class="docutils literal notranslate"><span class="pre">ksig</span></code>. Unused if <code class="docutils literal notranslate"><span class="pre">shifts</span></code> are provided 
+when running <a class="reference internal" href="#rca.RCA.fit" title="rca.RCA.fit"><code class="xref py py-func docutils literal notranslate"><span class="pre">RCA.fit()</span></code></a>. Default is 5.</dd>
+<dt>filters: np.ndarray</dt>
+<dd>Optional filters to the transform domain wherein eigenPSFs are assumed to be sparse;
+convolution by them should amount to applying <span class="math notranslate nohighlight">\(\Phi\)</span>. Optional; if not provided, the
+Starlet transform with <cite>n_scales</cite> scales will be used.</dd>
+<dt>verbose: bool or int</dt>
+<dd>If True, will only output RCA-specific lines to stdout. If verbose is set to 2,
+will run ModOpt’s optimization algorithms in verbose mode.</dd>
+</dl>
+<dl class="method">
+<dt id="rca.RCA.estimate_psf">
+<code class="descname">estimate_psf</code><span class="sig-paren">(</span><em>test_pos</em>, <em>n_neighbors=15</em>, <em>rbf_function='thin_plate'</em>, <em>apply_degradation=False</em>, <em>shifts=None</em>, <em>flux=None</em>, <em>upfact=None</em>, <em>rca_format=False</em><span class="sig-paren">)</span><a class="headerlink" href="#rca.RCA.estimate_psf" title="Permalink to this definition">¶</a></dt>
+<dd><p>Estimate and return PSF at desired positions.</p>
+<dl class="docutils">
+<dt>test_pos: np.ndarray</dt>
+<dd>Positions where the PSF should be estimated. Should be in the same format (units,
+etc.) as the <code class="docutils literal notranslate"><span class="pre">obs_pos</span></code> fed to <a class="reference internal" href="#rca.RCA.fit" title="rca.RCA.fit"><code class="xref py py-func docutils literal notranslate"><span class="pre">RCA.fit()</span></code></a>.</dd>
+<dt>n_neighbors: int</dt>
+<dd>Number of neighbors to use for RBF interpolation. Default is 15.</dd>
+<dt>rbf_function: str</dt>
+<dd>Type of RBF kernel to use. Default is <code class="docutils literal notranslate"><span class="pre">'thin_plate'</span></code>.</dd>
+<dt>apply_degradation: bool</dt>
+<dd>Whether PSF model should be degraded (shifted and resampled on coarse grid), 
+for instance for comparison with stars. If True, expects shifts to be provided.
+Default is False.</dd>
+<dt>shifts: np.ndarray</dt>
+<dd>Intra-pixel shifts to apply if <code class="docutils literal notranslate"><span class="pre">apply_degradation</span></code> is set to True.</dd>
+<dt>flux: np.ndarray</dt>
+<dd>Flux levels by which reconstructed PSF will be multiplied if provided. For comparison with 
+stars if <code class="docutils literal notranslate"><span class="pre">apply_degradation</span></code> is set to True.</dd>
+<dt>upfact: int</dt>
+<dd>Upsampling factor; default is None, in which case that of the RCA instance will be used.</dd>
+<dt>rca_format: bool</dt>
+<dd>If True, returns the PSF model in “rca” format, i.e. with axises
+(n_pixels, n_pixels, n_stars). Otherwise, and by default, return them in
+“regular” format, (n_stars, n_pixels, n_pixels).</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="rca.RCA.fit">
+<code class="descname">fit</code><span class="sig-paren">(</span><em>obs_data</em>, <em>obs_pos</em>, <em>obs_weights=None</em>, <em>S=None</em>, <em>VT=None</em>, <em>alpha=None</em>, <em>shifts=None</em>, <em>sigs=None</em>, <em>psf_size=None</em>, <em>psf_size_type='fwhm'</em>, <em>flux=None</em>, <em>nb_iter=2</em>, <em>nb_subiter_S=200</em>, <em>nb_reweight=0</em>, <em>nb_subiter_weights=None</em>, <em>n_eigenvects=5</em>, <em>graph_kwargs={}</em><span class="sig-paren">)</span><a class="headerlink" href="#rca.RCA.fit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fits RCA to observed star field.</p>
+<dl class="docutils">
+<dt>obs_data: np.ndarray</dt>
+<dd>Observed data.</dd>
+<dt>obs_pos: np.ndarray</dt>
+<dd>Corresponding positions.</dd>
+<dt>obs_weights: np.ndarray</dt>
+<dd>Corresponding weights. Can be either one per observed star, or contain pixel-wise values. Masks can be
+handled via binary weights. Default is None (in which case no weights are applied). Note if fluxes and
+shifts are not provided, weights will be ignored for their estimation. Noise level estimation only removes 
+bad pixels (with weight strictly equal to 0) and otherwise ignores weights.</dd>
+<dt>S: np.ndarray</dt>
+<dd>First guess (or warm start) eigenPSFs <span class="math notranslate nohighlight">\(S\)</span>. Default is <code class="docutils literal notranslate"><span class="pre">None</span></code>.</dd>
+<dt>VT: np.ndarray</dt>
+<dd>Matrix of concatenated graph Laplacians. Default is <code class="docutils literal notranslate"><span class="pre">None</span></code>.</dd>
+<dt>alpha: np.ndarray</dt>
+<dd>First guess (or warm start) weights <span class="math notranslate nohighlight">\(\alpha\)</span>, after factorization by <code class="docutils literal notranslate"><span class="pre">VT</span></code>. Default is <code class="docutils literal notranslate"><span class="pre">None</span></code>.</dd>
+<dt>shifts: np.ndarray</dt>
+<dd>Corresponding sub-pixel shifts. Default is <code class="docutils literal notranslate"><span class="pre">None</span></code>; will be estimated from
+observed data if not provided.</dd>
+<dt>sigs: np.ndarray</dt>
+<dd>Estimated noise levels. Default is <code class="docutils literal notranslate"><span class="pre">None</span></code>; will be estimated from data
+if not provided.</dd>
+<dt>psf_size: float</dt>
+<dd>Approximate expected PSF size in pixels; will be used for the size of the Gaussian window for centroid estimation.
+<code class="docutils literal notranslate"><span class="pre">psf_size_type</span></code> determines the convention used for this size (default is FWHM).
+Ignored if <code class="docutils literal notranslate"><span class="pre">shifts</span></code> are provided. Default is Gaussian sigma of 7.5 pixels.</dd>
+<dt>psf_size_type: str</dt>
+<dd>Can be any of <code class="docutils literal notranslate"><span class="pre">'R2'</span></code>, <code class="docutils literal notranslate"><span class="pre">'fwhm'</span></code> or <code class="docutils literal notranslate"><span class="pre">'sigma'</span></code>, for the size defined from quadrupole moments, full width at half maximum
+(e.g. from SExtractor) or 1-sigma width of the best matching 2D Gaussian. Default is <code class="docutils literal notranslate"><span class="pre">'fwhm'</span></code>.</dd>
+<dt>flux: np.ndarray</dt>
+<dd>Flux levels. Default is <code class="docutils literal notranslate"><span class="pre">None</span></code>; will be estimated from data if not provided.</dd>
+<dt>nb_iter: int</dt>
+<dd>Number of overall iterations (i.e. of alternations). Note the weights do not
+get updated the last time around, so they actually get <code class="docutils literal notranslate"><span class="pre">nb_iter-1</span></code> updates.
+Default is 2.</dd>
+<dt>nb_subiter_S: int</dt>
+<dd>Maximum number of iterations for <span class="math notranslate nohighlight">\(S\)</span> updates. If ModOpt’s optimizers achieve 
+internal convergence, that number may (and often is) not reached. Default is
+200.</dd>
+<dt>nb_reweight: int </dt>
+<dd>Number of reweightings to apply during <span class="math notranslate nohighlight">\(S\)</span> updates. See equation (33) in RCA paper. 
+Default is 0.</dd>
+<dt>nb_subiter_weights: int</dt>
+<dd>Maximum number of iterations for <span class="math notranslate nohighlight">\(\alpha\)</span> updates. If ModOpt’s optimizers achieve 
+internal convergence, that number may (and often is) not reached. Default is None;
+if not provided, will be set to <code class="docutils literal notranslate"><span class="pre">2*nb_subiter_S</span></code> (as it was in RCA v1).</dd>
+<dt>n_eigenvects: int</dt>
+<dd>Maximum number of eigenvectors to consider per <span class="math notranslate nohighlight">\((e,a)\)</span> couple. Default is <code class="docutils literal notranslate"><span class="pre">None</span></code>;
+if not provided, <em>all</em> eigenvectors will be considered, which can lead to a poor
+selection of graphs, especially when data is undersampled. Ignored if <code class="docutils literal notranslate"><span class="pre">VT</span></code> and
+<code class="docutils literal notranslate"><span class="pre">alpha</span></code> are provided.</dd>
+<dt>graph_kwargs: dictionary</dt>
+<dd>List of optional kwargs to be passed on to the <a class="reference internal" href="utils.html#utils.GraphBuilder" title="utils.GraphBuilder"><code class="xref py py-func docutils literal notranslate"><span class="pre">utils.GraphBuilder()</span></code></a>.</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="rca.RCA.quicksave">
+<code class="descname">quicksave</code><span class="sig-paren">(</span><em>path</em><span class="sig-paren">)</span><a class="headerlink" href="#rca.RCA.quicksave" title="Permalink to this definition">¶</a></dt>
+<dd><p>Save fitted RCA model for later use. Ideally, you would probably want to store the
+whole RCA instance, though this might mean storing a lot of data you are not likely to
+use if you do not alter the fit that was already performed.
+Stored models can be loaded with <a class="reference internal" href="#rca.quickload" title="rca.quickload"><code class="xref py py-func docutils literal notranslate"><span class="pre">rca.quickload()</span></code></a>.</p>
+<dl class="docutils">
+<dt>path: str</dt>
+<dd>Path to where the fitted RCA model should be saved.</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="rca.RCA.validation_stars">
+<code class="descname">validation_stars</code><span class="sig-paren">(</span><em>test_stars</em>, <em>test_pos</em><span class="sig-paren">)</span><a class="headerlink" href="#rca.RCA.validation_stars" title="Permalink to this definition">¶</a></dt>
+<dd><p>Match PSF model to stars - in flux, shift and pixel sampling - for validation tests.
+Returns both the matched PSFs’ stamps and chi-square value.</p>
+<dl class="docutils">
+<dt>test_stars: np.ndarray</dt>
+<dd>Star stamps to be used for comparison with the PSF model. Should be in “rca” format, 
+i.e. with axises (n_pixels, n_pixels, n_stars).</dd>
+<dt>test_pos: np.ndarray</dt>
+<dd>Their corresponding positions.</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="rca.quickload">
+<code class="descclassname">rca.</code><code class="descname">quickload</code><span class="sig-paren">(</span><em>path</em><span class="sig-paren">)</span><a class="headerlink" href="#rca.quickload" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load pre-fitted RCA model (saved with <a class="reference internal" href="#rca.RCA.quicksave" title="rca.RCA.quicksave"><code class="xref py py-func docutils literal notranslate"><span class="pre">RCA.quicksave()</span></code></a>).</p>
+<dl class="docutils">
+<dt>path: str</dt>
+<dd>Path to where the fitted RCA model was saved.</dd>
+</dl>
+</dd></dl>
+
 </div>
 
 
