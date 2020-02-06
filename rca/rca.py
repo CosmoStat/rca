@@ -459,7 +459,7 @@ window of 7.5 pixels.''')
 
                 # renormalize to break scale invariance
                 weight_norms = np.sqrt(np.sum(weights_k**2,axis=1)) 
-                comp *= weight_norms
+                # [TL]
                 weights_k /= weight_norms.reshape(-1,1)
                 #TODO: replace line below with Fred's component selection 
                 ind_select = range(weights.shape[0])
