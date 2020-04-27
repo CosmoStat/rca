@@ -120,7 +120,7 @@ def SoftThresholding(data,thresh):
 def HardThresholding(data,thresh):
     """ Performs element-wise hard thresholding."""
     thresh_data = np.copy(data)
-    thresh_data[thresh_data < thresh] = 0.
+    thresh_data[np.abs(thresh_data) < thresh] = 0.
     return thresh_data
     
 def kthresholding(x,k):
