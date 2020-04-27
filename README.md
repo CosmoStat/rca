@@ -2,7 +2,7 @@ RCA
 ===
 Resolved Component Analysis
 
-v2.0.1
+v2.0.2
 
 ## Description
 RCA is a PSF modelling python package. It enforces several constraints, notably some related to sparsity and spatial structure, to build a spatially-varying PSF model from observed, noisy and possibly undersampled star stamps. Some modicum of documentation can be found [here](https://cosmostat.github.io/rca/) - see also [quick start](#quick-start) below.
@@ -27,7 +27,7 @@ python setup.py install
 
 ## References
   - [Ngolè et al., 2016](https://arxiv.org/abs/1608.08104) - Inverse Problems, 32(12)
-  - [Schmitz et al., 2019](https://arxiv.org/abs/1906.07676) - submitted to A&A
+  - [Schmitz et al., 2020](https://arxiv.org/abs/1906.07676) - A&A, 636, A78
   
 ## Quick start
 The basic syntax to run RCA is as follows:

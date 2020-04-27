@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='rca',
-    version='2.0.1',
+    version='2.0.2',
     description='Resolved Component Analysis',
     author='Morgan A. Schmitz, Fred Ngole',
     author_email='morgan.schmitz@cea.fr',
