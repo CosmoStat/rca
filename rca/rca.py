@@ -323,7 +323,7 @@ window of 7.5 pixels.''')
         """ Initialization tasks related to noise levels, shifts and flux. Note it includes
         renormalizing observed data, so needs to be ran even if all three are provided."""
         if self.default_filters:
-            init_filters = get_mr_filters(self.shap[:2], opt=self.opt, coarse=True)
+            init_filters = get_mr_filters(self.shap[:2], opt=self.opt, coarse=True, trim=False)
         else:
             init_filters = self.Phi_filters
         # noise levels
@@ -373,7 +373,7 @@ window of 7.5 pixels.''')
         # initialize dual variable and compute Starlet filters for Condat source updates 
         dual_var = np.zeros((self.im_hr_shape))
         if self.default_filters:
-            self.Phi_filters = get_mr_filters(self.im_hr_shape[:2], opt=self.opt, coarse=True)
+            self.Phi_filters = get_mr_filters(self.im_hr_shape[:2], opt=self.opt, coarse=True, trim=False)
         rho_phi = np.sqrt(np.sum(np.sum(np.abs(self.Phi_filters),axis=(1,2))**2))
         
         # Set up source updates, starting with the gradient
@@ -459,7 +459,7 @@ window of 7.5 pixels.''')
 
                 # renormalize to break scale invariance
                 weight_norms = np.sqrt(np.sum(weights_k**2,axis=1)) 
-                comp *= weight_norms
+                # [TL]
                 weights_k /= weight_norms.reshape(-1,1)
                 #TODO: replace line below with Fred's component selection 
                 ind_select = range(weights.shape[0])

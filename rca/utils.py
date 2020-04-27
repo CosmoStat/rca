@@ -120,7 +120,7 @@ def SoftThresholding(data,thresh):
 def HardThresholding(data,thresh):
     """ Performs element-wise hard thresholding."""
     thresh_data = np.copy(data)
-    thresh_data[thresh_data < thresh] = 0.
+    thresh_data[np.abs(thresh_data) < thresh] = 0.
     return thresh_data
     
 def kthresholding(x,k):
@@ -277,7 +277,7 @@ def gen_Pea(distances, e, a):
     
     Pea = np.copy(distances**e)
     np.fill_diagonal(Pea, 1.)
-    Pea = -1./Pea**e
+    Pea = -1./Pea # [TL]
     for i in range(Pea.shape[0]):
         Pea[i,i] = a*(np.sum(-1.*Pea[i]) - 1.)
     return Pea
