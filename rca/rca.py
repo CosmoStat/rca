@@ -412,7 +412,7 @@ window of 7.5 pixels.''')
             # ... set optimization parameters...
             beta = source_grad.spec_rad + rho_phi
             tau = 1./beta
-            sigma = 1./lin_recombine.norm * beta/2
+            sigma = (1. / lin_recombine.norm**2 )* beta/2
 
             # ... update sparsity prox thresholds...
             thresh = utils.reg_format(utils.acc_sig_maps(self.shap,self.shift_ker_stack_adj,self.sigs,
