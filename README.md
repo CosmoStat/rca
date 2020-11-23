@@ -4,6 +4,8 @@ Resolved Component Analysis
 
 v2.0.2
 
+Before using RCA from this repo, you might want to check out [MCCD](https://github.com/CosmoStat/mccd), a more recent PSF modelling approach. MCCD includes all aspects of RCA, but extends it in several ways. In particular, it can simultaneously fit all detectors of a multi-CCD mosaic camera. It has been shown to outperform RCA. Reference: [Liaudat et al., 2020](https://arxiv.org/abs/2011.09835)
+
 ## Description
 RCA is a PSF modelling python package. It enforces several constraints, notably some related to sparsity and spatial structure, to build a spatially-varying PSF model from observed, noisy and possibly undersampled star stamps. Some modicum of documentation can be found [here](https://cosmostat.github.io/rca/) - see also [quick start](#quick-start) below.
 
